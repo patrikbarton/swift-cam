@@ -1027,7 +1027,7 @@ class CameraManager: ObservableObject {
     
     /// Verifies and reports the actual compute unit being used by CoreML  
     /// This is called AFTER successful inference to ensure accuracy
-    private func verifyComputeUnit(for model: MLModel, configuration: MLModelConfiguration) {
+    private func verifyComputeUnit(for model: MLModel, configuration: MLModelConfiguration) async {
         let modelName = currentModel.displayName // Store model name for logging
         
         Task {
