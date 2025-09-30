@@ -1044,40 +1044,6 @@ class CameraManager: ObservableObject {
     }
     
     /// Extracts the expected input size from model description
-    private func getModelInputSize(from inputDescription: MLFeatureDescription?) -> CGSize {
-        guard let description = inputDescription else {
-            return CGSize(width: 224, height: 224) // Default fallback
-        }
-        
-        switch description.type {
-        case .image:
-            if let constraint = description.imageConstraint {
-                return CGSize(width: constraint.pixelsWide, height: constraint.pixelsHigh)
-            }
-        case .multiArray:
-            if let constraint = description.multiArrayConstraint {
-                let shape = constraint.shape
-                if shape.count >= 3 {
-                    // Assuming format like [batch, height, width] or [batch, channels, height, width]
-                    let height = shape[shape.count - 2].intValue
-                    let width = shape[shape.count - 1].intValue
-                    return CGSize(width: width, height: height)
-                }
-            }
-        default:
-            break
-        }
-        
-        // Model-specific defaults based on known architectures
-        switch currentModel {
-        case .mobileNet:
-            return CGSize(width: 224, height: 224)
-        case .resnet50:
-            return CGSize(width: 224, height: 224)
-        case .fastViT:
-            return CGSize(width: 256, height: 256) // FastViT typically uses 256x256
-        }
-    }
     
     /// Creates a small test image for compute unit verification
     private func createTestImage(size: CGSize, featureName: String) -> MLFeatureProvider {
