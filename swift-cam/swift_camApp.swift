@@ -9,9 +9,17 @@ import SwiftUI
 
 @main
 struct swift_camApp: App {
+    @StateObject private var appState = AppState()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if appState.isLoading {
+                SplashScreenView()
+                    .environmentObject(appState)
+            } else {
+                ContentView()
+                    .environmentObject(appState)
+            }
         }
     }
 }
