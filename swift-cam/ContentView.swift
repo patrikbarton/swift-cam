@@ -233,7 +233,7 @@ struct ContentView: View {
                                 HStack(spacing: 12) {
                                     ForEach(MLModelType.allCases) { model in
                                         Button(action: {
-                                            Logger.ui.info("⚡ Instant model change to \(model.displayName)")
+                                            ConditionalLogger.debug(Logger.ui, "⚡ Instant model change to \(model.displayName)")
                                             selectedModel = model
                                             cameraManager.updateModel(to: model)
                                         }) {
@@ -371,7 +371,7 @@ struct ContentView: View {
         }
         // Remove the problematic onChange - we handle everything in button action
         .onAppear {
-            Logger.ui.info("📱 ContentView appeared - UI is ready")
+            ConditionalLogger.debug(Logger.ui, "📱 ContentView appeared - UI is ready")
         }
         .fullScreenCover(isPresented: $showingLiveCamera) {
             LiveCameraView(cameraManager: cameraManager, selectedModel: selectedModel)
@@ -942,7 +942,7 @@ class CameraManager: ObservableObject {
     private let modelQueue = DispatchQueue(label: "model.loading.queue", qos: .userInitiated)
     
     init() {
-        Logger.model.info("🚀 CameraManager initializing")
+        ConditionalLogger.debug(Logger.model, "🚀 CameraManager initializing")
         // Models were already loaded into memory during splash screen preloading
         // This load will be nearly instant as models are cached in memory by CoreML
         Task.detached(priority: .userInitiated) {
@@ -953,7 +953,7 @@ class CameraManager: ObservableObject {
     /// Load initial model completely in background
     /// Benefits from splash screen preloading - models already in CoreML cache
     @MainActor private func loadInitialModel() async {
-        Logger.model.info("📥 Loading default model: MobileNet V2 (using preloaded cache)")
+        ConditionalLogger.debug(Logger.model, "📥 Loading default model: MobileNet V2 (using preloaded cache)")
         await loadModel(.mobileNet)
     }
     
@@ -1041,7 +1041,7 @@ class CameraManager: ObservableObject {
                 self.isComputeUnitVerified = true
             }
             
-            Logger.performance.info("✅ \(modelName): \(actualComputeUnit)")
+            ConditionalLogger.performance(Logger.performance, "✅ \(modelName): \(actualComputeUnit)")
         }
     }
     
@@ -1110,13 +1110,13 @@ class CameraManager: ObservableObject {
     func loadModel(_ modelType: MLModelType) async {
         // Check cache first
         if let cachedRequest = modelCache[modelType] {
-            Logger.model.info("⚡ Using cached \(modelType.displayName)")
+            ConditionalLogger.debug(Logger.model, "⚡ Using cached \(modelType.displayName)")
             currentModel = modelType
             classificationRequest = cachedRequest
             return
         }
         
-        Logger.model.info("📥 Loading \(modelType.displayName)")
+        ConditionalLogger.debug(Logger.model, "📥 Loading \(modelType.displayName)")
         
         loadingModelName = modelType.displayName
         isLoadingModel = true
@@ -1125,7 +1125,7 @@ class CameraManager: ObservableObject {
             currentModel = modelType
             classificationRequest = request
             modelCache[modelType] = request
-            Logger.model.info("✅ Loaded \(modelType.displayName)")
+            ConditionalLogger.debug(Logger.model, "✅ Loaded \(modelType.displayName)")
         } else {
             Logger.model.error("❌ Failed to load \(modelType.displayName)")
         }
@@ -1144,7 +1144,7 @@ class CameraManager: ObservableObject {
             return
         }
         
-        Logger.model.info("🔄 Switching to \(modelType.displayName)")
+        ConditionalLogger.debug(Logger.model, "🔄 Switching to \(modelType.displayName)")
         
         let imageToReclassify = capturedImage // Store current image before switching
         
