@@ -4,6 +4,9 @@
 
 ## User settings
 xcuserdata/
+*.xcuserstate
+*.xcuserdata
+project.xcworkspace/xcuserdata/
 
 ## Obj-C/Swift specific
 *.hmap
@@ -64,3 +67,6 @@ fastlane/test_output
 .DS_Store
 swift-cam/DeveloperSettings.xcconfig
 
+
+.gemini/
+gha-creds-*.json

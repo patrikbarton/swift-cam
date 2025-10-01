@@ -2,44 +2,63 @@
 //  SplashScreenView.swift
 //  swift-cam
 //
-//  Startup splash screen with loading animation
+//  Startup splash screen that preloads all pre-compiled ML models into memory
+//  Splash duration is dynamically based on actual model loading time (not fixed)
 //
 
 import SwiftUI
 import Combine
 import OSLog
+import CoreML
 
 // MARK: - App State Manager
 @MainActor
 class AppState: ObservableObject {
     @Published var isLoading = true
     @Published var loadingProgress: String = "Initializing..."
-    
+    @Published var preloadDuration: TimeInterval = 0
+    @Published var currentModelNumber: Int = 0
+    @Published var totalModels: Int = 3
+
     init() {
         Task {
             await startPreloading()
         }
     }
-    
+
     private func startPreloading() async {
-        Logger.model.info("🚀 App starting - beginning model preload")
-        
-        // Update progress messages
-        loadingProgress = "Loading MobileNet V2..."
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
-        
-        loadingProgress = "Loading ResNet-50..."
-        try? await Task.sleep(nanoseconds: 500_000_000)
-        
-        loadingProgress = "Loading FastViT..."
-        try? await Task.sleep(nanoseconds: 500_000_000)
-        
-        loadingProgress = "Optimizing AI Models..."
-        try? await Task.sleep(nanoseconds: 500_000_000)
-        
-        // Ensure splash shows for at least 2 seconds total
-        Logger.model.info("✅ Model preload complete, transitioning to app")
-        
+        Logger.model.info("🚀 App starting - preloading pre-compiled ML models for optimal performance")
+
+        let start = Date()
+
+        // Preload all ML models: Xcode has already compiled models to .mlmodelc format during build.
+        // This loads them into memory and ensures they're cached by CoreML for instant use.
+        await ModelPreloader.preloadAll { progressText in
+            // Update UI on main actor
+            Task { @MainActor in
+                self.loadingProgress = progressText
+                
+                // Parse model number from progress text if it contains (x/y) format
+                if let match = progressText.range(of: "\\((\\d+)/(\\d+)\\)", options: .regularExpression) {
+                    let numbers = progressText[match].dropFirst().dropLast().split(separator: "/")
+                    if numbers.count == 2, 
+                       let current = Int(numbers[0]), 
+                       let total = Int(numbers[1]) {
+                        self.currentModelNumber = current
+                        self.totalModels = total
+                    }
+                }
+            }
+        }
+
+        let elapsed = Date().timeIntervalSince(start)
+        self.preloadDuration = elapsed
+        Logger.model.info("✅ Model preload complete - took \(String(format: "%.2f", elapsed))s to load and cache all models")
+
+        // Short delay to show "Ready!" message before transition
+        try? await Task.sleep(nanoseconds: 300_000_000) // 300ms
+
+        // Transition off the splash only after the real preload completes
         withAnimation(.easeOut(duration: 0.5)) {
             self.isLoading = false
         }
@@ -99,10 +118,37 @@ struct SplashScreenView: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(1.2)
                     
+                    // Progress text with model loading status
                     Text(appState.loadingProgress)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
                         .animation(.easeInOut(duration: 0.3), value: appState.loadingProgress)
+                    
+                    // Progress indicator bar
+                    if appState.totalModels > 0 && appState.currentModelNumber > 0 {
+                        VStack(spacing: 6) {
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    // Background bar
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.white.opacity(0.2))
+                                        .frame(height: 4)
+                                    
+                                    // Progress bar
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.white)
+                                        .frame(width: geometry.size.width * (CGFloat(appState.currentModelNumber) / CGFloat(appState.totalModels)), height: 4)
+                                        .animation(.easeInOut(duration: 0.3), value: appState.currentModelNumber)
+                                }
+                            }
+                            .frame(height: 4)
+                            
+                            Text("\(appState.currentModelNumber) of \(appState.totalModels) models")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.white.opacity(0.6))
+                        }
+                        .frame(width: 200)
+                    }
                 }
                 .opacity(showTagline ? 1 : 0)
                 .padding(.bottom, 60)

@@ -943,15 +943,17 @@ class CameraManager: ObservableObject {
     
     init() {
         Logger.model.info("🚀 CameraManager initializing")
-        // Move ALL model operations off main thread from the start
+        // Models were already loaded into memory during splash screen preloading
+        // This load will be nearly instant as models are cached in memory by CoreML
         Task.detached(priority: .userInitiated) {
             await self.loadInitialModel()
         }
     }
     
     /// Load initial model completely in background
+    /// Benefits from splash screen preloading - models already in CoreML cache
     @MainActor private func loadInitialModel() async {
-        Logger.model.info("📥 Loading default model: MobileNet V2")
+        Logger.model.info("📥 Loading default model: MobileNet V2 (using preloaded cache)")
         await loadModel(.mobileNet)
     }
     
