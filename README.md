@@ -30,7 +30,7 @@ AI-powered object recognition app for iOS using Core ML.
    ```bash
    ./setup-developer.sh
    ```
-   Or see [DEVELOPER_SETUP.md](DEVELOPER_SETUP.md) for manual setup.
+   Or see [DEVELOPER_SETUP.md](Docs/DEVELOPER_SETUP.md) for manual setup.
 
 3. **Open in Xcode:**
    ```bash
@@ -51,9 +51,9 @@ git pull
 
 ## 📖 Documentation
 
-- **[Developer Setup Guide](DEVELOPER_SETUP.md)** - Configure code signing (required for first-time setup)
-- **[Repository Structure](REPOSITORY_STRUCTURE.md)** - What files to commit, Info.plist explained
-- **[Quick Start](QUICK_START.md)** - TL;DR for getting started quickly
+- **[Developer Setup Guide](Docs/DEVELOPER_SETUP.md)** - Configure code signing (required for first-time setup)
+- **[Repository Structure](Docs/REPOSITORY_STRUCTURE.md)** - What files to commit, Info.plist explained
+- **[Quick Start](Docs/QUICK_START.md)** - TL;DR for getting started quickly
 - **[Docs/](Docs/)** - Additional technical guides and design documentation
   - [Repository Q&A](Docs/REPOSITORY_QUESTIONS_ANSWERED.md) - Common questions answered
   - [Testing Guide](Docs/TESTING_GUIDE.md) - How to test the app
@@ -86,7 +86,7 @@ Your personal developer configuration (`DeveloperSettings.xcconfig`) won't be co
 This project uses per-developer configuration files to avoid signing conflicts:
 - Each developer has their own `DeveloperSettings.xcconfig` (git-ignored)
 - No more merge conflicts on Team IDs or Bundle Identifiers
-- See [DEVELOPER_SETUP.md](DEVELOPER_SETUP.md) for details
+- See [DEVELOPER_SETUP.md](Docs/DEVELOPER_SETUP.md) for details
 
 ## 📦 ML Models
 
@@ -100,7 +100,7 @@ Models are automatically compiled by Xcode during build and preloaded during the
 ## 🐛 Troubleshooting
 
 ### Signing Issues
-See [DEVELOPER_SETUP.md](DEVELOPER_SETUP.md) troubleshooting section.
+See [DEVELOPER_SETUP.md](Docs/DEVELOPER_SETUP.md) troubleshooting section.
 
 ### Build Errors
 1. Clean build folder: `Cmd+Shift+K`
@@ -123,4 +123,4 @@ Models are automatically included in the build. If you see errors:
 
 ---
 
-**Need help?** Check [DEVELOPER_SETUP.md](DEVELOPER_SETUP.md) or open an issue!
+**Need help?** Check [DEVELOPER_SETUP.md](Docs/DEVELOPER_SETUP.md) or open an issue!
