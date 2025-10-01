@@ -1165,8 +1165,6 @@ class CameraManager: ObservableObject {
             
             // Auto re-classify current image with new model if one exists
             if let image = imageToReclassify {
-                // Add a brief pause to show the model has switched before re-analyzing
-                try? await Task.sleep(nanoseconds: AppConstants.modelSwitchDelayNanoseconds)
                 await self.classifyImage(image)
             }
             
