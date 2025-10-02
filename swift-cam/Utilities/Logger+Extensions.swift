@@ -24,6 +24,9 @@ extension Logger {
     
     /// Image processing logging
     static let image = Logger(subsystem: subsystem, category: "Image")
+    
+    /// Camera setup logging
+    static let cameraSetup = Logger(subsystem: subsystem, category: "CameraSetup")
 }
 
 // MARK: - Conditional Logging Helpers
