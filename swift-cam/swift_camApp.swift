@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct swift_camApp: App {
-    @StateObject private var appState = AppStateViewModel()
+    @StateObject private var appState = AppState()
     
     var body: some Scene {
         WindowGroup {

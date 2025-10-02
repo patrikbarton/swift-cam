@@ -2,13 +2,6 @@
 
 This directory contains technical documentation and guides for the swift-cam project.
 
-## 🏗️ **Architektur (NEU!)**
-
-**Die App wurde vollständig modularisiert!** Von einem Monolithen (1643 Zeilen) zu einer sauberen MVVM-Architektur mit klarer Trennung von UI und Logik.
-
-- **[Modular Architecture](MODULAR_ARCHITECTURE.md)** - Detaillierte Beschreibung der modularen MVVM-Architektur
-- **[Architecture Diagram](ARCHITECTURE_DIAGRAM.md)** - Visuelle Diagramme und Datenfluss
-
 ## 📖 User Guides
 
 ### For New Developers
