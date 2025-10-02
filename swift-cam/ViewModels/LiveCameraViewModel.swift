@@ -13,9 +13,6 @@ import CoreML
 import CoreImage
 import OSLog
 
-extension Logger {
-    static let cameraSetup = Logger(subsystem: "com.butterflyVision.swift-cam", category: "CameraSetup")
-}
 
 /// Manages live camera feed and real-time classification with multi-camera support
 class LiveCameraViewModel: NSObject, ObservableObject {
