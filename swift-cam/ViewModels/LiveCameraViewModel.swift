@@ -138,13 +138,20 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     func loadModel(_ modelType: MLModelType) async {
         isLoadingModel = true
         
-        if let request = await modelService.createModel(for: modelType) { [weak self] request, error in
+        // Create a fresh request with our completion handler (even if cached, we need our handler)
+        if let baseRequest = await modelService.createModel(for: modelType) { [weak self] request, error in
             self?.processLiveClassifications(for: request, error: error)
         } {
+            // CRITICAL FIX: Recreate the request with our completion handler
+            // Cached requests keep their old handlers, which breaks live detection
+            let model = baseRequest.model
+            let request = VNCoreMLRequest(model: model) { [weak self] request, error in
+                self?.processLiveClassifications(for: request, error: error)
+            }
+            request.imageCropAndScaleOption = .centerCrop
+            
             currentModel = modelType
             classificationRequest = request
-            // KEY CHANGE: Set .centerCrop for WYSIWYG alignment
-            request.imageCropAndScaleOption = .centerCrop
             liveResults.removeAll()
         }
         
