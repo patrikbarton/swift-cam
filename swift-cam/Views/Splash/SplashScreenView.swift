@@ -93,14 +93,9 @@ struct SplashScreenView: View {
             }
         }
         .onAppear {
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.6)) {
-                scale = 1.0
-                opacity = 1.0
-            }
-            
-            withAnimation(.easeOut(duration: 0.5).delay(0.3)) {
-                showTagline = true
-            }
+            scale = 1.0
+            opacity = 1.0
+            showTagline = true
         }
     }
 }

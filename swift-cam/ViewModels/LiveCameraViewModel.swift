@@ -135,21 +135,19 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     func loadModel(_ modelType: MLModelType) async {
         isLoadingModel = true
         
-        // Create a fresh request with our completion handler (even if cached, we need our handler)
-        if let baseRequest = await modelService.createModel(for: modelType) { [weak self] request, error in
-            self?.processLiveClassifications(for: request, error: error)
-        } {
-            // CRITICAL FIX: Recreate the request with our completion handler
-            // Cached requests keep their old handlers, which breaks live detection
-            let model = baseRequest.model
-            let request = VNCoreMLRequest(model: model) { [weak self] request, error in
-                self?.processLiveClassifications(for: request, error: error)
+        do {
+            let model = try await modelService.createModel(for: modelType)
+            let request = VNCoreMLRequest(model: model.model) { [weak self] request, error in
+                DispatchQueue.main.async {
+                    self?.processLiveClassifications(for: request, error: error)
+                }
             }
             request.imageCropAndScaleOption = .centerCrop
-            
             currentModel = modelType
             classificationRequest = request
             liveResults.removeAll()
+        } catch {
+            // Handle error
         }
         
         // Set the input size for the low-res preview
@@ -189,15 +187,14 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         self.photoOutput.capturePhoto(with: settings, delegate: self)
     }
     
+    @MainActor
     private func processLiveClassifications(for request: VNRequest, error: Error?) {
-        DispatchQueue.main.async {
-            guard error == nil, let observations = request.results as? [VNClassificationObservation] else { return }
+        guard error == nil, let observations = request.results as? [VNClassificationObservation] else { return }
 
-            // Directly map the latest observations to results for instant feedback
-            self.liveResults = observations.prefix(5).compactMap { observation -> ClassificationResult? in
-                guard observation.confidence > 0.25 else { return nil }
-                return ClassificationResult(identifier: observation.identifier, confidence: Double(observation.confidence))
-            }
+        // Directly map the latest observations to results for instant feedback
+        self.liveResults = observations.prefix(5).compactMap { observation -> ClassificationResult? in
+            guard observation.confidence > 0.25 else { return nil }
+            return ClassificationResult(identifier: observation.identifier, confidence: Double(observation.confidence))
         }
     }
 }
@@ -227,44 +224,43 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
         
         // KEY CHANGE: Use .right orientation for portrait mode (matches actual device orientation)
         let imageOrientation = CGImagePropertyOrientation.right
-
-        // Low-res preview generation (GPU-accelerated with CoreImage)
+        
         if showLowResPreview {
-            let originalCIImage = CIImage(cvPixelBuffer: pixelBuffer)
-            let rotatedCIImage = originalCIImage.oriented(imageOrientation)
-
-            // Crop to center square first (matching .centerCrop behavior)
-            let imageExtent = rotatedCIImage.extent
-            let shorterSide = min(imageExtent.width, imageExtent.height)
-            let croppingRect = CGRect(
-                x: (imageExtent.width - shorterSide) / 2.0,
-                y: (imageExtent.height - shorterSide) / 2.0,
-                width: shorterSide,
-                height: shorterSide
-            )
-            let croppedCIImage = rotatedCIImage.cropped(to: croppingRect)
-
-            // Scale down to model input size
-            let scaleX = modelInputSize.width / croppedCIImage.extent.width
-            let scaleY = modelInputSize.height / croppedCIImage.extent.height
-            let transform = CGAffineTransform(scaleX: scaleX, y: scaleY)
-
-            let scaledImage = croppedCIImage.transformed(by: transform)
-
-            if let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) {
-                let finalImage = UIImage(cgImage: cgImage)
-                DispatchQueue.main.async {
-                    self.lowResPreviewImage = finalImage
+            processingQueue.async {
+                let originalCIImage = CIImage(cvPixelBuffer: pixelBuffer)
+                let rotatedCIImage = originalCIImage.oriented(imageOrientation)
+                
+                // Crop to center square first (matching .centerCrop behavior)
+                let imageExtent = rotatedCIImage.extent
+                let shorterSide = min(imageExtent.width, imageExtent.height)
+                let croppingRect = CGRect(
+                    x: (imageExtent.width - shorterSide) / 2.0,
+                    y: (imageExtent.height - shorterSide) / 2.0,
+                    width: shorterSide,
+                    height: shorterSide
+                )
+                let croppedCIImage = rotatedCIImage.cropped(to: croppingRect)
+                
+                // Scale down to model input size
+                let scaleX = self.modelInputSize.width / croppedCIImage.extent.width
+                let scaleY = self.modelInputSize.height / croppedCIImage.extent.height
+                let transform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+                
+                let scaledImage = croppedCIImage.transformed(by: transform)
+                
+                if let cgImage = self.context.createCGImage(scaledImage, from: scaledImage.extent) {
+                    let finalImage = UIImage(cgImage: cgImage)
+                    DispatchQueue.main.async {
+                        self.lowResPreviewImage = finalImage
+                    }
                 }
             }
-        } else {
-            if lowResPreviewImage != nil {
-                DispatchQueue.main.async {
-                    self.lowResPreviewImage = nil
-                }
+        } else if lowResPreviewImage != nil {
+            DispatchQueue.main.async {
+                self.lowResPreviewImage = nil
             }
         }
-
+        
         guard let classificationRequest = classificationRequest else { return }
         
         lastProcessingTime = currentTime
@@ -277,6 +273,6 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
         } catch {
             // Silently handle errors to avoid UI disruption
         }
+        
     }
 }
-

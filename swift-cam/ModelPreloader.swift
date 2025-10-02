@@ -52,9 +52,6 @@ struct ModelPreloader {
                 logger.info("✅ [\(modelNumber)/\(totalModels)] \(display) loaded successfully in \(String(format: "%.2f", modelDuration))s")
                 
                 progress("✓ \(display)")
-                
-                // Brief UI update pause to show completion
-                try await Task.sleep(nanoseconds: 100_000_000) // 100ms for UI feedback
 
             } catch {
                 logger.error("❌ Failed to preload \(display): \(error.localizedDescription)")
