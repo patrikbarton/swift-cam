@@ -218,7 +218,9 @@ private struct ModelSelectorView: View {
                 Button(action: {
                     ConditionalLogger.debug(Logger.ui, "⚡ Instant model change to \(model.displayName)")
                     selectedModel = model
-                    viewModel.updateModel(to: model)
+                    Task {
+                        await viewModel.updateModel(to: model)
+                    }
                 }) {
                     ZStack {
                         Circle()

@@ -8,6 +8,7 @@
 import CoreGraphics
 
 enum AppConstants {
+    static let preloadModels = true
     static let maxClassificationResults = 5
     static let modelSwitchDelayNanoseconds: UInt64 = 500_000_000 // 0.5 seconds
     static let animationSpringResponse: Double = 0.8

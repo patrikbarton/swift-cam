@@ -20,18 +20,14 @@ class ModelService {
     
     private init() {}
     
-    /// Creates a VNCoreMLRequest for the specified model type
-    func createModel(
-        for modelType: MLModelType,
-        completion: @escaping (VNRequest, Error?) -> Void
-    ) async -> VNCoreMLRequest? {
+    func createModel(for modelType: MLModelType) async throws -> VNCoreMLRequest {
         // Check cache first
         if let cachedRequest = modelCache[modelType] {
             ConditionalLogger.debug(Logger.model, "⚡ Using cached \(modelType.displayName)")
             return cachedRequest
         }
         
-        return await withCheckedContinuation { continuation in
+        return try await withCheckedThrowingContinuation { continuation in
             modelQueue.async {
                 // First try with Neural Engine/GPU (optimal performance)
                 let optimalConfiguration = MLModelConfiguration()
@@ -50,7 +46,7 @@ class ModelService {
                     }
                     
                     let model = try VNCoreMLModel(for: coreMLModel)
-                    let request = VNCoreMLRequest(model: model, completionHandler: completion)
+                    let request = VNCoreMLRequest(model: model)
                     request.imageCropAndScaleOption = .centerCrop
                     
                     // Cache the request
@@ -71,7 +67,7 @@ class ModelService {
                     do {
                         let coreMLModel = try FastViTMA36F16(configuration: cpuConfiguration).model
                         let model = try VNCoreMLModel(for: coreMLModel)
-                        let request = VNCoreMLRequest(model: model, completionHandler: completion)
+                        let request = VNCoreMLRequest(model: model)
                         request.imageCropAndScaleOption = .centerCrop
                         
                         // Cache the request
@@ -81,11 +77,12 @@ class ModelService {
                         return
                     } catch {
                         Logger.model.error("Failed to load \(modelType.displayName) even with CPU fallback: \(error.localizedDescription)")
+                        continuation.resume(throwing: error)
                     }
                 }
                 
                 // Complete failure
-                continuation.resume(returning: nil)
+                continuation.resume(throwing: ModelLoadingError.failedToLoad(modelType.displayName))
             }
         }
     }

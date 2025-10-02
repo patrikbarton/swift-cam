@@ -69,9 +69,7 @@ struct LiveCameraView: View {
                                 .clipShape(Circle())
                                 .tint(Color.black.opacity(0.4))
                                 .onChange(of: showLowResPreview) { _, newValue in
-                                    withAnimation {
-                                        liveCameraManager.showLowResPreview = newValue
-                                    }
+                                    liveCameraManager.showLowResPreview = newValue
                                 }
 
                                 Button(action: { liveCameraManager.switchCamera() }) {

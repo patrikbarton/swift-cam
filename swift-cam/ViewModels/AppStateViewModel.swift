@@ -20,7 +20,11 @@ class AppStateViewModel: ObservableObject {
 
     init() {
         Task {
-            await startPreloading()
+            if AppConstants.preloadModels {
+                await startPreloading()
+            } else {
+                self.isLoading = false
+            }
         }
     }
 

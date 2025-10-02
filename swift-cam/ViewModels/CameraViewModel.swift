@@ -49,54 +49,42 @@ class CameraViewModel: ObservableObject {
         loadingModelName = modelType.displayName
         isLoadingModel = true
         
-        if let request = await modelService.createModel(for: modelType) { [weak self] request, error in
-            Task { @MainActor [weak self] in
-                self?.processClassifications(for: request, error: error)
-            }
-            Task.detached(priority: .utility) { [weak self] in
-                await self?.verifyComputeUnit(for: modelType)
-            }
-        } {
+        do {
+            let request = try await modelService.createModel(for: modelType)
             currentModel = modelType
             classificationRequest = request
             ConditionalLogger.debug(Logger.model, "✅ Loaded \(modelType.displayName)")
-        } else {
-            Logger.model.error("❌ Failed to load \(modelType.displayName)")
+            await verifyComputeUnit(for: modelType)
+        } catch {
+            Logger.model.error("❌ Failed to load \(modelType.displayName): \(error.localizedDescription)")
+            errorMessage = "Failed to load model: \(error.localizedDescription)"
         }
         
         isLoadingModel = false
         loadingModelName = ""
     }
     
-    func updateModel(to modelType: MLModelType) {
+    func updateModel(to modelType: MLModelType) async {
         guard modelType != currentModel else { return }
         guard !isCurrentlySwitching else { return }
         
         ConditionalLogger.debug(Logger.model, "🔄 Switching to \(modelType.displayName)")
         
+        isCurrentlySwitching = true
+        isSwitchingModel = true
+        currentComputeUnit = ""
+        isComputeUnitVerified = false
+        
         let imageToReclassify = capturedImage
         
-        Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return }
-            
-            await MainActor.run {
-                self.isCurrentlySwitching = true
-                self.isSwitchingModel = true
-                self.currentComputeUnit = ""
-                self.isComputeUnitVerified = false
-            }
-            
-            await self.loadModel(modelType)
-            
-            if let image = imageToReclassify {
-                await self.classifyImage(image)
-            }
-            
-            await MainActor.run {
-                self.isSwitchingModel = false
-                self.isCurrentlySwitching = false
-            }
+        await loadModel(modelType)
+        
+        if let image = imageToReclassify {
+            await classifyImage(image)
         }
+        
+        isSwitchingModel = false
+        isCurrentlySwitching = false
     }
     
     func classifyImage(_ image: UIImage) async {
@@ -123,27 +111,13 @@ class CameraViewModel: ObservableObject {
         
         do {
             try handler.perform([classificationRequest])
-        } catch {
-            isAnalyzing = false
-            errorMessage = "Classification failed: \(error.localizedDescription)"
-        }
-    }
-    
-    private func processClassifications(for request: VNRequest, error: Error?) {
-        DispatchQueue.main.async {
-            self.isAnalyzing = false
-            
-            if let error = error {
-                self.errorMessage = "Classification error: \(error.localizedDescription)"
+            guard let observations = classificationRequest.results as? [VNClassificationObservation] else {
+                errorMessage = "Unable to classify image"
+                isAnalyzing = false
                 return
             }
             
-            guard let observations = request.results as? [VNClassificationObservation] else {
-                self.errorMessage = "Unable to classify image"
-                return
-            }
-            
-            self.classificationResults = observations
+            classificationResults = observations
                 .prefix(AppConstants.maxClassificationResults)
                 .map { observation in
                     ClassificationResult(
@@ -151,8 +125,14 @@ class CameraViewModel: ObservableObject {
                         confidence: Double(observation.confidence)
                     )
                 }
+            isAnalyzing = false
+        } catch {
+            isAnalyzing = false
+            errorMessage = "Classification failed: \(error.localizedDescription)"
         }
     }
+    
+
     
     private func verifyComputeUnit(for modelType: MLModelType) async {
         // Simplified version - compute unit verification
