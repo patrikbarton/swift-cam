@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var selectedImage: PhotosPickerItem? = nil
     @State private var showingLiveCamera = false
     @State private var selectedModel: MLModelType = .mobileNet
+    @State private var isFirstAppearance = true
     
     var body: some View {
         NavigationView {
@@ -68,6 +69,10 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            if isFirstAppearance {
+                showingLiveCamera = true
+                isFirstAppearance = false
+            }
             ConditionalLogger.debug(Logger.ui, "📱 ContentView appeared - UI is ready")
         }
         .fullScreenCover(isPresented: $showingLiveCamera) {
