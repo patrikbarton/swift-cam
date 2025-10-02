@@ -55,3 +55,28 @@ struct ZoomControlView: View {
     }
 }
 
+#if DEBUG
+import AVFoundation
+
+class MockLiveCameraViewModel: LiveCameraViewModel {
+    override init() {
+        super.init()
+#if !targetEnvironment(simulator)
+        let wide = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)!
+        let ultraWide = AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back)
+        let telephoto = AVCaptureDevice.default(.builtInTelephotoCamera, for: .video, position: .back)
+        
+        self.availableBackCameras = [wide, ultraWide, telephoto].compactMap { $0 }
+        self.activeCamera = wide
+#endif
+    }
+}
+
+#Preview {
+    let mockManager = MockLiveCameraViewModel()
+    return ZoomControlView(manager: mockManager)
+        .padding()
+        .background(Color.black)
+}
+#endif
+

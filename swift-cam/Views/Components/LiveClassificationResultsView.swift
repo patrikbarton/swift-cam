@@ -46,6 +46,24 @@ struct LiveClassificationResultsView: View {
     }
 }
 
+#Preview("With Results") {
+    LiveClassificationResultsView(
+        results: [
+            ClassificationResult(identifier: "Golden Retriever", confidence: 0.92),
+            ClassificationResult(identifier: "Labrador Retriever", confidence: 0.88),
+        ],
+        model: .mobileNet
+    )
+    .padding()
+    .background(Color.gray)
+}
+
+#Preview("Empty") {
+    LiveClassificationResultsView(results: [], model: .mobileNet)
+        .padding()
+        .background(Color.gray)
+}
+
 struct LiveClassificationRow: View {
     let rank: Int
     let result: ClassificationResult

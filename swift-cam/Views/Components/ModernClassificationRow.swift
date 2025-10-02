@@ -65,3 +65,9 @@ struct ModernClassificationRow: View {
     }
 }
 
+#Preview {
+    ModernClassificationRow(result: ClassificationResult(identifier: "Golden Retriever", confidence: 0.92))
+        .padding()
+        .background(Color(.systemGroupedBackground))
+}
+

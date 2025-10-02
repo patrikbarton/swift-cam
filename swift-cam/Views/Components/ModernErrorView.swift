@@ -46,3 +46,9 @@ struct ModernErrorView: View {
     }
 }
 
+#Preview {
+    ModernErrorView(message: "This is a sample error message to demonstrate how the view will look.")
+        .padding()
+        .background(Color(.systemGroupedBackground))
+}
+

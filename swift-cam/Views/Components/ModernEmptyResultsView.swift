@@ -35,3 +35,9 @@ struct ModernEmptyResultsView: View {
     }
 }
 
+#Preview {
+    ModernEmptyResultsView()
+        .padding()
+        .background(Color(.systemGroupedBackground))
+}
+

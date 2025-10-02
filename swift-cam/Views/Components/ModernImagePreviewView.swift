@@ -100,3 +100,30 @@ struct ModernImagePreviewView: View {
     }
 }
 
+#Preview("With Image") {
+    ModernImagePreviewView(
+        image: UIImage(systemName: "photo"),
+        isAnalyzing: false
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+
+#Preview("Analyzing") {
+    ModernImagePreviewView(
+        image: UIImage(systemName: "photo"),
+        isAnalyzing: true
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+
+#Preview("No Image") {
+    ModernImagePreviewView(
+        image: nil,
+        isAnalyzing: false
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+

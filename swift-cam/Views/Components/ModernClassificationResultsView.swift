@@ -30,3 +30,47 @@ struct ModernClassificationResultsView: View {
     }
 }
 
+#Preview("With Results") {
+    ModernClassificationResultsView(
+        results: [
+            ClassificationResult(identifier: "Labrador Retriever", confidence: 0.98),
+            ClassificationResult(identifier: "Golden Retriever", confidence: 0.92),
+            ClassificationResult(identifier: "Beagle", confidence: 0.87)
+        ],
+        isAnalyzing: false,
+        error: nil
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+
+#Preview("Analyzing") {
+    ModernClassificationResultsView(
+        results: [],
+        isAnalyzing: true,
+        error: nil
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+
+#Preview("Error") {
+    ModernClassificationResultsView(
+        results: [],
+        isAnalyzing: false,
+        error: "Failed to load model. Please check the model file."
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+
+#Preview("Empty") {
+    ModernClassificationResultsView(
+        results: [],
+        isAnalyzing: false,
+        error: nil
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+

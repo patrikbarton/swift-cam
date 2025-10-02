@@ -55,3 +55,15 @@ struct ModernLiveResultsOverlay: View {
     }
 }
 
+#Preview {
+    ModernLiveResultsOverlay(
+        results: [
+            ClassificationResult(identifier: "Golden Retriever", confidence: 0.92),
+            ClassificationResult(identifier: "Labrador Retriever", confidence: 0.88),
+        ],
+        isProcessing: false
+    )
+    .padding()
+    .background(Color.gray)
+}
+

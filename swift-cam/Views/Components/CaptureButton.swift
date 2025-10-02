@@ -25,3 +25,9 @@ struct CaptureButton: View {
     }
 }
 
+#Preview {
+    CaptureButton(action: {})
+        .padding()
+        .background(Color(.systemGroupedBackground))
+}
+

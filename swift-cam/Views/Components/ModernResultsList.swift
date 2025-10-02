@@ -52,3 +52,13 @@ struct ModernResultsList: View {
     }
 }
 
+#Preview {
+    ModernResultsList(results: [
+        ClassificationResult(identifier: "Labrador Retriever", confidence: 0.98),
+        ClassificationResult(identifier: "Golden Retriever", confidence: 0.92),
+        ClassificationResult(identifier: "Beagle", confidence: 0.87)
+    ])
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+

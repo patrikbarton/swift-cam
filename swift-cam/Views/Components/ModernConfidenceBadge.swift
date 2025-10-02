@@ -42,3 +42,14 @@ struct ModernConfidenceBadge: View {
     }
 }
 
+#Preview {
+    VStack(spacing: 10) {
+        ModernConfidenceBadge(confidence: 0.95)
+        ModernConfidenceBadge(confidence: 0.75)
+        ModernConfidenceBadge(confidence: 0.55)
+        ModernConfidenceBadge(confidence: 0.25)
+    }
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+

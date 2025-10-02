@@ -11,9 +11,15 @@ struct LiveCameraView: View {
     @ObservedObject var cameraManager: CameraViewModel
     let selectedModel: MLModelType
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var liveCameraManager = LiveCameraViewModel()
+    @StateObject private var liveCameraManager: LiveCameraViewModel
 
     @State private var showLowResPreview = false
+
+    init(cameraManager: CameraViewModel, selectedModel: MLModelType, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel()) {
+        self.cameraManager = cameraManager
+        self.selectedModel = selectedModel
+        _liveCameraManager = StateObject(wrappedValue: liveCameraManager)
+    }
 
     var body: some View {
         ZStack {
@@ -118,4 +124,18 @@ struct LiveCameraView: View {
         }
     }
 }
+
+#if DEBUG
+class MockCameraViewModel: CameraViewModel {}
+
+class MockLiveCameraViewModelForPreview: LiveCameraViewModel {
+    override func startSession() {
+        // Do nothing to prevent camera access in preview
+    }
+}
+
+#Preview {
+    LiveCameraView(cameraManager: MockCameraViewModel(), selectedModel: .mobileNet, liveCameraManager: MockLiveCameraViewModelForPreview())
+}
+#endif
 
