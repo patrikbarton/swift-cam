@@ -1,5 +1,6 @@
 #!/bin/bash
-cd /Users/pbarton/BS14/swift-cam/swift-cam/ViewModels
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR/swift-cam/ViewModels"
 
 # CameraViewModel.swift
 cat > CameraViewModel.swift << 'EOF'
