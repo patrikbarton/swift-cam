@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Vision
 
 struct ClassificationResult {
     let identifier: String
@@ -17,24 +16,6 @@ struct ClassificationResult {
         self.identifier = identifier
         self.confidence = confidence
         self.detectedAt = detectedAt
-    }
-    
-    ///   - observations: The array of `VNClassificationObservation` from a Vision request.
-    ///   - maxResults: The maximum number of results to return.
-    ///   - minConfidence: The minimum confidence score for a result to be included.
-    /// - Returns: An array of `ClassificationResult`.
-    static func from(observations: [VNClassificationObservation], maxResults: Int, minConfidence: Float = 0.0) -> [ClassificationResult] {
-        return observations
-            .prefix(maxResults)
-            .compactMap { observation in
-                guard observation.confidence >= minConfidence else {
-                    return nil
-                }
-                return ClassificationResult(
-                    identifier: observation.identifier,
-                    confidence: Double(observation.confidence)
-                )
-            }
     }
     
     var displayName: String {
@@ -72,3 +53,4 @@ struct ClassificationResult {
         }
     }
 }
+

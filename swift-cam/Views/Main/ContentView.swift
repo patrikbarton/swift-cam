@@ -47,8 +47,7 @@ struct ContentView: View {
                             ModernClassificationResultsView(
                                 results: viewModel.classificationResults,
                                 isAnalyzing: viewModel.isAnalyzing,
-                                error: viewModel.errorMessage,
-                                maxResults: AppConstants.libraryViewMaxResults
+                                error: viewModel.errorMessage
                             )
                             
                             // Action Buttons

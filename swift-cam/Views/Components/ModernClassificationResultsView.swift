@@ -11,14 +11,13 @@ struct ModernClassificationResultsView: View {
     let results: [ClassificationResult]
     let isAnalyzing: Bool
     let error: String?
-    let maxResults: Int
     
     var body: some View {
         VStack(spacing: 16) {
             if let error = error {
                 ModernErrorView(message: error)
             } else if !results.isEmpty {
-                ModernResultsList(results: results, maxResults: maxResults)
+                ModernResultsList(results: results)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.95)).combined(with: .move(edge: .bottom)),
                         removal: .opacity.combined(with: .scale(scale: 1.05)).combined(with: .move(edge: .top))
@@ -39,8 +38,7 @@ struct ModernClassificationResultsView: View {
             ClassificationResult(identifier: "Beagle", confidence: 0.87)
         ],
         isAnalyzing: false,
-        error: nil,
-        maxResults: AppConstants.libraryViewMaxResults
+        error: nil
     )
     .padding()
     .background(Color(.systemGroupedBackground))
@@ -50,8 +48,7 @@ struct ModernClassificationResultsView: View {
     ModernClassificationResultsView(
         results: [],
         isAnalyzing: true,
-        error: nil,
-        maxResults: AppConstants.libraryViewMaxResults
+        error: nil
     )
     .padding()
     .background(Color(.systemGroupedBackground))
@@ -61,8 +58,7 @@ struct ModernClassificationResultsView: View {
     ModernClassificationResultsView(
         results: [],
         isAnalyzing: false,
-        error: "Failed to load model. Please check the model file.",
-        maxResults: AppConstants.libraryViewMaxResults
+        error: "Failed to load model. Please check the model file."
     )
     .padding()
     .background(Color(.systemGroupedBackground))
@@ -72,9 +68,9 @@ struct ModernClassificationResultsView: View {
     ModernClassificationResultsView(
         results: [],
         isAnalyzing: false,
-        error: nil,
-        maxResults: AppConstants.libraryViewMaxResults
+        error: nil
     )
     .padding()
     .background(Color(.systemGroupedBackground))
 }
+
