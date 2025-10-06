@@ -108,6 +108,35 @@ struct AppleStyleButton: View {
     }
 }
 
+#if DEBUG
+#Preview {
+    VStack(spacing: 20) {
+        AppleStyleButton(
+            title: "Primary Action",
+            subtitle: "The main CTA",
+            icon: "star.fill",
+            style: .primary
+        )
+        
+        AppleStyleButton(
+            title: "Secondary Action",
+            subtitle: "An alternative option",
+            icon: "arrow.right.circle",
+            style: .secondary
+        )
+        
+        AppleStyleButton(
+            title: "Tertiary Action",
+            subtitle: "A less common option",
+            icon: "gearshape",
+            style: .tertiary
+        )
+    }
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+#endif
+
 #Preview {
     VStack(spacing: 20) {
         AppleStyleButton(

@@ -43,14 +43,5 @@ struct ClassificationResult {
         default: return .red
         }
     }
-    
-    var confidenceUIColor: UIColor {
-        switch confidence {
-        case 0.5...1.0: return UIColor.systemGreen
-        case 0.35...0.5: return UIColor.systemYellow
-        case 0.2...0.35: return UIColor.systemOrange
-        default: return UIColor.systemRed
-        }
-    }
 }
 

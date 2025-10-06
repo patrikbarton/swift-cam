@@ -61,14 +61,64 @@ git pull
 
 ## 🏗️ Architecture
 
+The app is built using the **Model-View-ViewModel (MVVM)** design pattern, which separates the UI from the business logic and data.
+
+```mermaid
+graph TD
+    subgraph Views
+        direction LR
+        A[LiveCameraView] --> B(CameraViewModel)
+        C[LibraryView] --> D(LibraryViewModel)
+        E[SplashScreenView] --> F(AppStateViewModel)
+    end
+
+    subgraph ViewModels
+        direction LR
+        B --> G{ModelService}
+        D --> G
+        F --> G
+    end
+
+    subgraph Models
+        direction LR
+        G --> H[ML Models]
+        G --> I[CameraService]
+    end
+
+    style A fill:#D6EAF8,stroke:#333,stroke-width:2px
+    style C fill:#D6EAF8,stroke:#333,stroke-width:2px
+    style E fill:#D6EAF8,stroke:#333,stroke-width:2px
+
+    style B fill:#D1F2EB,stroke:#333,stroke-width:2px
+    style D fill:#D1F2EB,stroke:#333,stroke-width:2px
+    style F fill:#D1F2EB,stroke:#333,stroke-width:2px
+
+    style G fill:#FADBD8,stroke:#333,stroke-width:2px
+    style H fill:#FDEDEC,stroke:#333,stroke-width:2px
+    style I fill:#FDEDEC,stroke:#333,stroke-width:2px
 ```
-swift-cam/
-├── ModelPreloader.swift      # Preloads ML models at launch
-├── SplashScreenView.swift    # Splash with progress tracking
-├── ContentView.swift         # Main app UI and logic
-├── swift_camApp.swift        # App entry point
-└── *.mlmodel[c]             # Core ML models
-```
+
+### 1. Model
+
+*   **What it is:** The Model represents the data and business logic of the application. It's the "brains" of the operation, responsible for managing the app's data and performing the core tasks.
+*   **In this project:**
+    *   **Data Models:** `ClassificationResult.swift`, `MLModelType.swift`, `AppConstants.swift`
+    *   **Services:** `ModelService.swift` (loads and manages ML models), `CameraService.swift` (manages the camera)
+
+### 2. View
+
+*   **What it is:** The View is the user interface (UI). It's what the user sees and interacts with. In SwiftUI, Views are declarative, meaning you describe what the UI should look like, and SwiftUI takes care of rendering it.
+*   **In this project:** All the files in the `Views` directory.
+
+### 3. ViewModel
+
+*   **What it is:** The ViewModel acts as a bridge between the View and the Model. It takes the data from the Model and prepares it for the View to display. It also takes input from the View (like a button tap) and tells the Model what to do.
+*   **In this project:**
+    *   `AppStateViewModel.swift`: Manages the app's loading state.
+    *   `CameraViewModel.swift`: Manages the live camera feed and real-time classification.
+    *   `LibraryViewModel.swift`: Manages the classification of images from the photo library.
+
+**Note:** Not every View needs a ViewModel. Simple, reusable components often don't, but more complex views (like screens) usually do to keep the code clean and organized.
 
 ## 🤝 Contributing
 

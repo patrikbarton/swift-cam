@@ -31,7 +31,7 @@ class LibraryViewModel: ObservableObject {
     private let modelService = ModelService.shared
     
     init() {
-        ConditionalLogger.debug(Logger.model, "🚀 CameraViewModel initializing")
+        Logger.model.debug("🚀 CameraViewModel initializing")
         Task.detached(priority: .userInitiated) {
             await self.loadInitialModel()
         }
@@ -39,12 +39,12 @@ class LibraryViewModel: ObservableObject {
     
     /// Load initial model completely in background
     @MainActor private func loadInitialModel() async {
-        ConditionalLogger.debug(Logger.model, "📥 Loading default model: MobileNet V2 (using preloaded cache)")
+        Logger.model.debug("📥 Loading default model: MobileNet V2 (using preloaded cache)")
         await loadModel(.mobileNet)
     }
     
     func loadModel(_ modelType: MLModelType) async {
-        ConditionalLogger.debug(Logger.model, "📥 Loading \(modelType.displayName)")
+        Logger.model.debug("📥 Loading \(modelType.displayName)")
         
         loadingModelName = modelType.displayName
         isLoadingModel = true
@@ -53,7 +53,7 @@ class LibraryViewModel: ObservableObject {
             let request = try await modelService.createModel(for: modelType)
             currentModel = modelType
             classificationRequest = request
-            ConditionalLogger.debug(Logger.model, "✅ Loaded \(modelType.displayName)")
+            Logger.model.debug("✅ Loaded \(modelType.displayName)")
             await verifyComputeUnit(for: modelType)
         } catch {
             Logger.model.error("❌ Failed to load \(modelType.displayName): \(error.localizedDescription)")
@@ -68,7 +68,7 @@ class LibraryViewModel: ObservableObject {
         guard modelType != currentModel else { return }
         guard !isCurrentlySwitching else { return }
         
-        ConditionalLogger.debug(Logger.model, "🔄 Switching to \(modelType.displayName)")
+        Logger.model.debug("🔄 Switching to \(modelType.displayName)")
         
         isCurrentlySwitching = true
         isSwitchingModel = true
@@ -141,7 +141,7 @@ class LibraryViewModel: ObservableObject {
             self.isComputeUnitVerified = true
         }
         
-        ConditionalLogger.performance(Logger.performance, "✅ \(modelType.displayName): Neural Engine")
+        Logger.performance.info("✅ \(modelType.displayName): Neural Engine")
     }
     
     func clearImage() {

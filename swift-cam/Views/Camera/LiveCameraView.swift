@@ -126,8 +126,6 @@ struct LiveCameraView: View {
 }
 
 #if DEBUG
-class MockCameraViewModel: LibraryViewModel {}
-
 class MockLiveCameraViewModelForPreview: CameraViewModel {
     override func startSession() {
         // Do nothing to prevent camera access in preview
@@ -135,7 +133,6 @@ class MockLiveCameraViewModelForPreview: CameraViewModel {
 }
 
 #Preview {
-    LiveCameraView(cameraManager: MockCameraViewModel(), selectedModel: .mobileNet, liveCameraManager: MockLiveCameraViewModelForPreview())
+    LiveCameraView(cameraManager: LibraryViewModel(), selectedModel: .mobileNet, liveCameraManager: MockLiveCameraViewModelForPreview())
 }
 #endif
-

@@ -21,69 +21,47 @@ class ModelService {
     private init() {}
     
     func createModel(for modelType: MLModelType) async throws -> VNCoreMLRequest {
-        // Check cache first
         if let cachedRequest = modelCache[modelType] {
-            ConditionalLogger.debug(Logger.model, "⚡ Using cached \(modelType.displayName)")
+            Logger.model.debug("⚡ Using cached \(modelType.displayName)")
             return cachedRequest
         }
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            modelQueue.async {
-                // First try with Neural Engine/GPU (optimal performance)
-                let optimalConfiguration = MLModelConfiguration()
-                optimalConfiguration.computeUnits = .all
-                
-                do {
-                    let coreMLModel: MLModel
-                    
-                    switch modelType {
-                    case .mobileNet:
-                        coreMLModel = try MobileNetV2(configuration: optimalConfiguration).model
-                    case .resnet50:
-                        coreMLModel = try Resnet50(configuration: optimalConfiguration).model
-                    case .fastViT:
-                        coreMLModel = try FastViTMA36F16(configuration: optimalConfiguration).model
-                    }
-                    
-                    let model = try VNCoreMLModel(for: coreMLModel)
-                    let request = VNCoreMLRequest(model: model)
-                    request.imageCropAndScaleOption = .centerCrop
-                    
-                    // Cache the request
-                    self.modelCache[modelType] = request
-                    
-                    continuation.resume(returning: request)
-                    return
-                } catch {
-                    Logger.model.warning("Failed to load \(modelType.displayName) with Neural Engine/GPU, trying CPU fallback: \(error.localizedDescription)")
-                }
-                
-                // Fallback: Try CPU-only for problematic models
-                if modelType == .fastViT {
-                    Logger.model.info("Trying \(modelType.displayName) with CPU fallback")
-                    let cpuConfiguration = MLModelConfiguration()
-                    cpuConfiguration.computeUnits = .cpuOnly
-                    
-                    do {
-                        let coreMLModel = try FastViTMA36F16(configuration: cpuConfiguration).model
-                        let model = try VNCoreMLModel(for: coreMLModel)
-                        let request = VNCoreMLRequest(model: model)
-                        request.imageCropAndScaleOption = .centerCrop
-                        
-                        // Cache the request
-                        self.modelCache[modelType] = request
-                        
-                        continuation.resume(returning: request)
-                        return
-                    } catch {
-                        Logger.model.error("Failed to load \(modelType.displayName) even with CPU fallback: \(error.localizedDescription)")
-                        continuation.resume(throwing: error)
-                    }
-                }
-                
-                // Complete failure
-                continuation.resume(throwing: ModelLoadingError.failedToLoad(modelType.displayName))
+
+        let configurations: [MLModelConfiguration] = {
+            var configs = [MLModelConfiguration()] // Default .all
+            if modelType == .fastViT {
+                let cpuConfig = MLModelConfiguration()
+                cpuConfig.computeUnits = .cpuOnly
+                configs.append(cpuConfig)
             }
+            return configs
+        }()
+
+        for config in configurations {
+            do {
+                let coreMLModel = try await loadCoreMLModel(for: modelType, config: config)
+                let model = try VNCoreMLModel(for: coreMLModel)
+                let request = VNCoreMLRequest(model: model)
+                request.imageCropAndScaleOption = .centerCrop
+                
+                modelCache[modelType] = request
+                Logger.model.info("✅ Loaded \(modelType.displayName) with \(config.computeUnits.description)")
+                return request
+            } catch {
+                Logger.model.warning("⚠️ Failed to load \(modelType.displayName) with \(config.computeUnits.description): \(error.localizedDescription)")
+            }
+        }
+
+        throw ModelLoadingError.failedToLoad(modelType.displayName)
+    }
+
+    private func loadCoreMLModel(for modelType: MLModelType, config: MLModelConfiguration) async throws -> MLModel {
+        switch modelType {
+        case .mobileNet:
+            return try MobileNetV2(configuration: config).model
+        case .resnet50:
+            return try Resnet50(configuration: config).model
+        case .fastViT:
+            return try FastViTMA36F16(configuration: config).model
         }
     }
     
@@ -138,10 +116,22 @@ class ModelService {
             fatalError("Could not create feature provider with feature name '\(featureName)': \(error)")
         }
     }
-    
+
     /// Clear all cached models
     func clearCache() {
         modelCache.removeAll()
+    }
+}
+
+extension MLComputeUnits {
+    var description: String {
+        switch self {
+        case .all: return "All"
+        case .cpuOnly: return "CPU Only"
+        case .cpuAndGPU: return "CPU & GPU"
+        case .cpuAndNeuralEngine: return "CPU & Neural Engine"
+        @unknown default: return "Unknown"
+        }
     }
 }
 

@@ -29,22 +29,5 @@ extension Logger {
     static let cameraSetup = Logger(subsystem: subsystem, category: "CameraSetup")
 }
 
-// MARK: - Conditional Logging Helpers
 
-/// Helper functions for conditional logging based on build configuration
-struct ConditionalLogger {
-    /// Debug logging that only shows in DEBUG builds
-    static func debug(_ logger: Logger, _ message: String) {
-        #if DEBUG
-        logger.debug("\(message)")
-        #endif
-    }
-    
-    /// Performance logging that only shows in DEBUG builds
-    static func performance(_ logger: Logger, _ message: String) {
-        #if DEBUG
-        logger.info("\(message)")
-        #endif
-    }
-}
 
