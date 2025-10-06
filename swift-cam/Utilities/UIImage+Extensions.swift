@@ -50,6 +50,30 @@ extension UIImage {
         
         return buffer
     }
+
+    /// Creates a new version of the image cropped to a center square.
+    /// This is used to ensure the image displayed in the UI (WYSIWYG) matches
+    /// the `.centerCrop` behavior of the Vision framework's image processing for the model.
+    /// This function acts as a wrapper, using the shared `CIImage.croppedToCenterSquare()` for consistent logic.
+    /// - Returns: A new `UIImage` cropped to a square, or `nil` if cropping fails.
+    func croppedToCenterSquare() -> UIImage? {
+        // 1. Convert UIImage to CIImage for processing
+        guard let ciImage = CIImage(image: self) else {
+            return nil
+        }
+
+        // 2. Use the shared, centralized cropping logic
+        let croppedCIImage = ciImage.croppedToCenterSquare()
+
+        // 3. Convert the cropped CIImage back to a UIImage
+        let context = CIContext(options: nil)
+        guard let croppedCGImage = context.createCGImage(croppedCIImage, from: croppedCIImage.extent) else {
+            return nil
+        }
+
+        // Create the final UIImage, preserving the original orientation and scale
+        return UIImage(cgImage: croppedCGImage, scale: self.scale, orientation: self.imageOrientation)
+    }
 }
 
 extension UIImage.Orientation {

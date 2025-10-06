@@ -93,11 +93,21 @@ class LibraryViewModel: ObservableObject {
             return
         }
         
-        capturedImage = image
+        // --- Refactoring for WYSIWYG --- //
+        // 1. Create a cropped, square version of the image for the UI.
+        //    This ensures what the user sees is what the model gets.
+        let croppedImageForDisplay = image.croppedToCenterSquare()
+        
+        // 2. Update the UI immediately with the cropped image.
+        capturedImage = croppedImageForDisplay
+        // --------------------------------- //
+        
         isAnalyzing = true
         classificationResults = []
         errorMessage = nil
         
+        // 3. Use the ORIGINAL image for classification.
+        //    Vision's `.centerCrop` will replicate the same crop internally.
         guard let cgImage = image.cgImage else {
             isAnalyzing = false
             errorMessage = "Unable to process image"
@@ -117,14 +127,11 @@ class LibraryViewModel: ObservableObject {
                 return
             }
             
-            classificationResults = observations
-                .prefix(AppConstants.maxClassificationResults)
-                .map { observation in
-                    ClassificationResult(
-                        identifier: observation.identifier,
-                        confidence: Double(observation.confidence)
-                    )
-                }
+            classificationResults = ClassificationResult.from(
+                observations: observations,
+                maxResults: AppConstants.libraryViewMaxResults,
+                minConfidence: AppConstants.libraryViewConfidenceThreshold
+            )
             isAnalyzing = false
         } catch {
             isAnalyzing = false

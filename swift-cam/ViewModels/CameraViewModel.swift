@@ -191,11 +191,12 @@ class CameraViewModel: NSObject, ObservableObject {
     private func processLiveClassifications(for request: VNRequest, error: Error?) {
         guard error == nil, let observations = request.results as? [VNClassificationObservation] else { return }
 
-        // Directly map the latest observations to results for instant feedback
-        self.liveResults = observations.prefix(5).compactMap { observation -> ClassificationResult? in
-            guard observation.confidence > 0.25 else { return nil }
-            return ClassificationResult(identifier: observation.identifier, confidence: Double(observation.confidence))
-        }
+        // Use the centralized factory method to process results, applying the confidence threshold
+        self.liveResults = ClassificationResult.from(
+            observations: observations,
+            maxResults: AppConstants.liveViewMaxResults,
+            minConfidence: AppConstants.liveViewConfidenceThreshold
+        )
     }
 }
 
@@ -230,16 +231,8 @@ extension CameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
                 let originalCIImage = CIImage(cvPixelBuffer: pixelBuffer)
                 let rotatedCIImage = originalCIImage.oriented(imageOrientation)
                 
-                // Crop to center square first (matching .centerCrop behavior)
-                let imageExtent = rotatedCIImage.extent
-                let shorterSide = min(imageExtent.width, imageExtent.height)
-                let croppingRect = CGRect(
-                    x: (imageExtent.width - shorterSide) / 2.0,
-                    y: (imageExtent.height - shorterSide) / 2.0,
-                    width: shorterSide,
-                    height: shorterSide
-                )
-                let croppedCIImage = rotatedCIImage.cropped(to: croppingRect)
+                // Use the centralized cropping logic
+                let croppedCIImage = rotatedCIImage.croppedToCenterSquare()
                 
                 // Scale down to model input size
                 let scaleX = self.modelInputSize.width / croppedCIImage.extent.width
