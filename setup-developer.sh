@@ -8,7 +8,7 @@ set -e  # Exit on error
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CONFIG_FILE="$SCRIPT_DIR/swift-cam/DeveloperSettings.xcconfig"
-EXAMPLE_FILE="$SCRIPT_DIR/swift-cam/DeveloperSettings.xcconfig.example.xcconfig"
+EXAMPLE_FILE="$SCRIPT_DIR/swift-cam/DeveloperSettings.xcconfig.example"
 
 echo "🚀 Swift-Cam Developer Setup"
 echo "============================"
