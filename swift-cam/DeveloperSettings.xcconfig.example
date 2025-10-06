@@ -17,9 +17,4 @@
 
 DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE
 CODE_SIGN_STYLE = Automatic
-// Base Bundle Identifier
-// This is the core bundle ID that will be used for all configurations.
-BASE_BUNDLE_ID = com.yourname.swift-cam
-
-
-
+PRODUCT_BUNDLE_IDENTIFIER = com.YOUR_NAME_HERE.swift-cam
