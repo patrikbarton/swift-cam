@@ -8,14 +8,14 @@
 import SwiftUI
 
 struct LiveCameraView: View {
-    @ObservedObject var cameraManager: CameraViewModel
+    @ObservedObject var cameraManager: LibraryViewModel
     let selectedModel: MLModelType
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var liveCameraManager: LiveCameraViewModel
+    @StateObject private var liveCameraManager: CameraViewModel
 
     @State private var showLowResPreview = false
 
-    init(cameraManager: CameraViewModel, selectedModel: MLModelType, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel()) {
+    init(cameraManager: LibraryViewModel, selectedModel: MLModelType, liveCameraManager: CameraViewModel = CameraViewModel()) {
         self.cameraManager = cameraManager
         self.selectedModel = selectedModel
         _liveCameraManager = StateObject(wrappedValue: liveCameraManager)
@@ -126,9 +126,9 @@ struct LiveCameraView: View {
 }
 
 #if DEBUG
-class MockCameraViewModel: CameraViewModel {}
+class MockCameraViewModel: LibraryViewModel {}
 
-class MockLiveCameraViewModelForPreview: LiveCameraViewModel {
+class MockLiveCameraViewModelForPreview: CameraViewModel {
     override func startSession() {
         // Do nothing to prevent camera access in preview
     }

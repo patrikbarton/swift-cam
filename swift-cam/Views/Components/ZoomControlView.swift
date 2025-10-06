@@ -9,7 +9,7 @@ import SwiftUI
 import AVFoundation
 
 struct ZoomControlView: View {
-    @ObservedObject var manager: LiveCameraViewModel
+    @ObservedObject var manager: CameraViewModel
 
     private func deviceOrder(_ deviceType: AVCaptureDevice.DeviceType) -> Int {
         switch deviceType {
@@ -58,7 +58,7 @@ struct ZoomControlView: View {
 #if DEBUG
 import AVFoundation
 
-class MockLiveCameraViewModel: LiveCameraViewModel {
+class MockLiveCameraViewModel: CameraViewModel {
     override init() {
         super.init()
 #if !targetEnvironment(simulator)

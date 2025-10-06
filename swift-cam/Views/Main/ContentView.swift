@@ -10,7 +10,7 @@ import PhotosUI
 import OSLog
 
 struct ContentView: View {
-    @StateObject private var viewModel = CameraViewModel()
+    @StateObject private var viewModel = LibraryViewModel()
     @State private var selectedImage: PhotosPickerItem? = nil
     @State private var showingLiveCamera = false
     @State private var selectedModel: MLModelType = .mobileNet
@@ -120,7 +120,7 @@ struct ContentView: View {
 
 // MARK: - Header View
 private struct HeaderView: View {
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: LibraryViewModel
     @Binding var selectedModel: MLModelType
     
     var body: some View {
@@ -147,7 +147,7 @@ private struct HeaderView: View {
 
 // MARK: - Status Text View
 private struct StatusTextView: View {
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: LibraryViewModel
     let selectedModel: MLModelType
     
     var body: some View {
@@ -214,7 +214,7 @@ private struct StatusTextView: View {
 
 // MARK: - Model Selector View
 private struct ModelSelectorView: View {
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: LibraryViewModel
     @Binding var selectedModel: MLModelType
     
     var body: some View {
@@ -251,7 +251,7 @@ private struct ModelSelectorView: View {
 
 // MARK: - Action Buttons View
 private struct ActionButtonsView: View {
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: LibraryViewModel
     @Binding var selectedImage: PhotosPickerItem?
     @Binding var showingLiveCamera: Bool
     
