@@ -1,0 +1,13 @@
+//
+//  Debug-Local.xcconfig
+//  swift-cam
+//
+//  Settings for the "Debug (Local)" configuration.
+
+// Inherit the user's personal settings (BASE_BUNDLE_ID, DEVELOPMENT_TEAM)
+#include "../DeveloperSettings.xcconfig"
+
+// This file defines the suffixes for the Local build.
+BUNDLE_ID_SUFFIX = .local
+APP_NAME_SUFFIX = Local
+APP_ICON_NAME_SUFFIX = -Local
