@@ -12,6 +12,7 @@ import OSLog
 struct ContentView: View {
     @State private var selectedTab = 0 // Default to Home
     @StateObject private var cameraViewModel = CameraViewModel()
+    @StateObject private var appStateViewModel = AppStateViewModel()
     @State private var selectedModel: MLModelType = .mobileNet
     
     var body: some View {
@@ -24,14 +25,14 @@ struct ContentView: View {
                 .tag(0)
             
             // Middle Tab - Camera (Auto-open Live Camera)
-            CameraTabView(viewModel: cameraViewModel, selectedModel: selectedModel, selectedTab: $selectedTab)
+            CameraTabView(viewModel: cameraViewModel, selectedModel: selectedModel, selectedTab: $selectedTab, appStateViewModel: appStateViewModel)
                 .tabItem {
                     Label("Camera", systemImage: "camera.fill")
                 }
                 .tag(1)
             
             // Right Tab - Settings (with Model Selector)
-            SettingsTabView(viewModel: cameraViewModel, selectedModel: $selectedModel)
+            SettingsTabView(viewModel: cameraViewModel, selectedModel: $selectedModel, appStateViewModel: appStateViewModel)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
@@ -216,6 +217,7 @@ struct CameraTabView: View {
     @ObservedObject var viewModel: CameraViewModel
     let selectedModel: MLModelType
     @Binding var selectedTab: Int
+    @ObservedObject var appStateViewModel: AppStateViewModel
     @State private var showingLiveCamera = false
     
     var body: some View {
@@ -261,7 +263,7 @@ struct CameraTabView: View {
             // When camera is dismissed, go back to Home tab
             selectedTab = 0
         }) {
-            LiveCameraView(cameraManager: viewModel, selectedModel: selectedModel)
+            LiveCameraView(cameraManager: viewModel, selectedModel: selectedModel, fullScreenCamera: appStateViewModel.fullScreenCamera)
         }
     }
 }
@@ -270,6 +272,7 @@ struct CameraTabView: View {
 struct SettingsTabView: View {
     @ObservedObject var viewModel: CameraViewModel
     @Binding var selectedModel: MLModelType
+    @ObservedObject var appStateViewModel: AppStateViewModel
     
     var body: some View {
         NavigationStack {
@@ -328,6 +331,28 @@ struct SettingsTabView: View {
                                     }
                                 }
                             }
+                            .padding(.horizontal, 24)
+                        }
+                        
+                        // Camera Settings Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Camera Settings")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 24)
+                            
+                            Text("Customize your camera experience")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.7))
+                                .padding(.horizontal, 24)
+                            
+                            CameraSettingToggleRow(
+                                icon: "viewfinder.rectangular",
+                                title: "Full Screen Camera",
+                                description: "Expand camera to full screen or keep it square",
+                                isOn: $appStateViewModel.fullScreenCamera,
+                                color: .cyan
+                            )
                             .padding(.horizontal, 24)
                         }
                         
@@ -491,6 +516,49 @@ struct InfoRow: View {
             Text(value)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.8))
+        }
+        .padding(16)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+// MARK: - Camera Setting Toggle Row Component
+struct CameraSettingToggleRow: View {
+    let icon: String
+    let title: String
+    let description: String
+    @Binding var isOn: Bool
+    let color: Color
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.2))
+                    .frame(width: 50, height: 50)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundStyle(color)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                
+                Text(description)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(2)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .tint(color)
         }
         .padding(16)
         .background(.ultraThinMaterial)

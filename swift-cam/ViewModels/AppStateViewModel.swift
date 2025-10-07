@@ -17,6 +17,7 @@ class AppStateViewModel: ObservableObject {
     @Published var preloadDuration: TimeInterval = 0
     @Published var currentModelNumber: Int = 0
     @Published var totalModels: Int = 3
+    @Published var fullScreenCamera: Bool = false // Camera size preference
 
     init() {
         Task {

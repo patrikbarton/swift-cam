@@ -10,14 +10,16 @@ import SwiftUI
 struct LiveCameraView: View {
     @ObservedObject var cameraManager: CameraViewModel
     let selectedModel: MLModelType
+    let fullScreenCamera: Bool
     @Environment(\.dismiss) private var dismiss
     @StateObject private var liveCameraManager: LiveCameraViewModel
 
     @State private var showLowResPreview = false
 
-    init(cameraManager: CameraViewModel, selectedModel: MLModelType, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel()) {
+    init(cameraManager: CameraViewModel, selectedModel: MLModelType, fullScreenCamera: Bool = false, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel()) {
         self.cameraManager = cameraManager
         self.selectedModel = selectedModel
+        self.fullScreenCamera = fullScreenCamera
         _liveCameraManager = StateObject(wrappedValue: liveCameraManager)
     }
 
@@ -25,16 +27,16 @@ struct LiveCameraView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // --- 1. CAMERA BLOCK (Square 1:1) ---
-                GeometryReader { geometry in
-                    ZStack {
-                        // Camera Preview Layer with .resizeAspectFill
-                        CameraPreviewView(session: liveCameraManager.session)
-                            .clipShape(Rectangle())
-
-                        // Low-resolution Overlay (Debug Mode)
-                        if showLowResPreview, let image = liveCameraManager.lowResPreviewImage {
+            if fullScreenCamera {
+                // --- FULL SCREEN CAMERA LAYOUT ---
+                ZStack {
+                    // Camera Preview Layer (Full Screen)
+                    CameraPreviewView(session: liveCameraManager.session)
+                        .ignoresSafeArea()
+                    
+                    // Low-resolution Overlay (Debug Mode)
+                    if showLowResPreview, let image = liveCameraManager.lowResPreviewImage {
+                        GeometryReader { geometry in
                             Image(uiImage: image)
                                 .resizable()
                                 .interpolation(.none) // Makes it pixelated
@@ -43,76 +45,180 @@ struct LiveCameraView: View {
                                 .clipped()
                                 .transition(.opacity)
                         }
-
-                        // UI Overlay Layer
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Button(action: { dismiss() }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .padding(12)
-                                        .background(Color.black.opacity(0.4))
-                                        .clipShape(Circle())
-                                }
-                            }
-                            .padding([.horizontal, .top])
-
+                        .ignoresSafeArea()
+                    }
+                    
+                    // UI Overlay Layer
+                    VStack {
+                        // Top Controls
+                        HStack {
                             Spacer()
-
+                            Button(action: { dismiss() }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .padding(12)
+                                    .background(Color.black.opacity(0.5))
+                                    .clipShape(Circle())
+                            }
+                        }
+                        .padding([.horizontal, .top])
+                        
+                        Spacer()
+                        
+                        // Results Overlay (at bottom)
+                        VStack(spacing: 0) {
+                            LiveClassificationResultsView(
+                                results: liveCameraManager.liveResults,
+                                model: selectedModel
+                            )
+                            .frame(height: 200)
+                            .padding(.horizontal)
+                            
+                            // Bottom Controls
                             HStack {
                                 ZoomControlView(manager: liveCameraManager)
+                                
                                 Spacer()
-
-                                // Toggle for low-resolution preview
-                                Toggle(isOn: $showLowResPreview) {
-                                    Image(systemName: "eye.square")
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(showLowResPreview ? .yellow : .white)
+                                
+                                // Capture Button
+                                CaptureButton {
+                                    liveCameraManager.capturePhoto { image in
+                                        if let image = image {
+                                            Task { await cameraManager.classifyImage(image) }
+                                        }
+                                        dismiss()
+                                    }
                                 }
-                                .toggleStyle(.button)
-                                .clipShape(Circle())
-                                .tint(Color.black.opacity(0.4))
-                                .onChange(of: showLowResPreview) { _, newValue in
-                                    liveCameraManager.showLowResPreview = newValue
-                                }
-
-                                Button(action: { liveCameraManager.switchCamera() }) {
-                                    Image(systemName: "arrow.triangle.2.circlepath.camera")
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .padding(12)
-                                        .background(Color.black.opacity(0.4))
-                                        .clipShape(Circle())
+                                
+                                Spacer()
+                                
+                                HStack(spacing: 12) {
+                                    // Toggle for low-resolution preview
+                                    Toggle(isOn: $showLowResPreview) {
+                                        Image(systemName: "eye.square")
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(showLowResPreview ? .yellow : .white)
+                                    }
+                                    .toggleStyle(.button)
+                                    .clipShape(Circle())
+                                    .tint(Color.black.opacity(0.5))
+                                    .onChange(of: showLowResPreview) { _, newValue in
+                                        liveCameraManager.showLowResPreview = newValue
+                                    }
+                                    
+                                    Button(action: { liveCameraManager.switchCamera() }) {
+                                        Image(systemName: "arrow.triangle.2.circlepath.camera")
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(.white)
+                                            .padding(12)
+                                            .background(Color.black.opacity(0.5))
+                                            .clipShape(Circle())
+                                    }
                                 }
                             }
                             .padding()
                         }
+                        .background(
+                            LinearGradient(
+                                colors: [.clear, .black.opacity(0.7)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                     }
                 }
-                .aspectRatio(1.0, contentMode: .fit)
+            } else {
+                // --- SQUARE CAMERA LAYOUT (Original) ---
+                VStack(spacing: 0) {
+                    // --- 1. CAMERA BLOCK (Square 1:1) ---
+                    GeometryReader { geometry in
+                        ZStack {
+                            // Camera Preview Layer with .resizeAspectFill
+                            CameraPreviewView(session: liveCameraManager.session)
+                                .clipShape(Rectangle())
 
-                // --- 2. RESULTS BLOCK ---
-                LiveClassificationResultsView(
-                    results: liveCameraManager.liveResults,
-                    model: selectedModel
-                )
-                .frame(height: 220) // Fixed height for stability
-                .padding()
+                            // Low-resolution Overlay (Debug Mode)
+                            if showLowResPreview, let image = liveCameraManager.lowResPreviewImage {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .interpolation(.none) // Makes it pixelated
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: geometry.size.width, height: geometry.size.height)
+                                    .clipped()
+                                    .transition(.opacity)
+                            }
 
-                // --- 3. CAPTURE BUTTON ---
-                Spacer()
+                            // UI Overlay Layer
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    Button(action: { dismiss() }) {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(.white)
+                                            .padding(12)
+                                            .background(Color.black.opacity(0.4))
+                                            .clipShape(Circle())
+                                    }
+                                }
+                                .padding([.horizontal, .top])
 
-                CaptureButton {
-                    liveCameraManager.capturePhoto { image in
-                        if let image = image {
-                            Task { await cameraManager.classifyImage(image) }
+                                Spacer()
+
+                                HStack {
+                                    ZoomControlView(manager: liveCameraManager)
+                                    Spacer()
+
+                                    // Toggle for low-resolution preview
+                                    Toggle(isOn: $showLowResPreview) {
+                                        Image(systemName: "eye.square")
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(showLowResPreview ? .yellow : .white)
+                                    }
+                                    .toggleStyle(.button)
+                                    .clipShape(Circle())
+                                    .tint(Color.black.opacity(0.4))
+                                    .onChange(of: showLowResPreview) { _, newValue in
+                                        liveCameraManager.showLowResPreview = newValue
+                                    }
+
+                                    Button(action: { liveCameraManager.switchCamera() }) {
+                                        Image(systemName: "arrow.triangle.2.circlepath.camera")
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(.white)
+                                            .padding(12)
+                                            .background(Color.black.opacity(0.4))
+                                            .clipShape(Circle())
+                                    }
+                                }
+                                .padding()
+                            }
                         }
-                        dismiss()
                     }
+                    .aspectRatio(1.0, contentMode: .fit)
+
+                    // --- 2. RESULTS BLOCK ---
+                    LiveClassificationResultsView(
+                        results: liveCameraManager.liveResults,
+                        model: selectedModel
+                    )
+                    .frame(height: 220) // Fixed height for stability
+                    .padding()
+
+                    // --- 3. CAPTURE BUTTON ---
+                    Spacer()
+
+                    CaptureButton {
+                        liveCameraManager.capturePhoto { image in
+                            if let image = image {
+                                Task { await cameraManager.classifyImage(image) }
+                            }
+                            dismiss()
+                        }
+                    }
+                    .padding(.bottom)
                 }
-                .padding(.bottom)
             }
         }
         .onAppear {
@@ -135,7 +241,7 @@ class MockLiveCameraViewModelForPreview: LiveCameraViewModel {
 }
 
 #Preview {
-    LiveCameraView(cameraManager: MockCameraViewModel(), selectedModel: .mobileNet, liveCameraManager: MockLiveCameraViewModelForPreview())
+    LiveCameraView(cameraManager: MockCameraViewModel(), selectedModel: .mobileNet, fullScreenCamera: false, liveCameraManager: MockLiveCameraViewModelForPreview())
 }
 #endif
 
