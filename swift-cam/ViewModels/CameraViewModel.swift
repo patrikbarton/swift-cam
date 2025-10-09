@@ -29,6 +29,7 @@ class CameraViewModel: ObservableObject {
     private var currentModel: MLModelType = .mobileNet
     private var classificationRequest: VNCoreMLRequest?
     private let modelService = ModelService.shared
+    private let faceBlurService = FaceBlurringService()
     
     init() {
         ConditionalLogger.debug(Logger.model, "🚀 CameraViewModel initializing")
@@ -80,25 +81,38 @@ class CameraViewModel: ObservableObject {
         await loadModel(modelType)
         
         if let image = imageToReclassify {
-            await classifyImage(image)
+            await classifyImage(image, applyFaceBlur: false) // Don't re-blur on model switch
         }
         
         isSwitchingModel = false
         isCurrentlySwitching = false
     }
     
-    func classifyImage(_ image: UIImage) async {
+    func classifyImage(_ image: UIImage, applyFaceBlur: Bool = false, blurStyle: BlurStyle = .gaussian) async {
         guard let classificationRequest = classificationRequest else {
             errorMessage = "Model not loaded"
             return
         }
         
-        capturedImage = image
         isAnalyzing = true
         classificationResults = []
         errorMessage = nil
         
-        guard let cgImage = image.cgImage else {
+        // Apply face blurring if enabled
+        var processedImage = image
+        if applyFaceBlur {
+            do {
+                processedImage = try await faceBlurService.blurFaces(in: image, blurRadius: 20.0, blurStyle: blurStyle)
+                Logger.privacy.info("🔒 Face blurring applied to captured image")
+            } catch {
+                Logger.privacy.warning("⚠️ Face blurring failed: \(error.localizedDescription)")
+                // Continue with original image if blurring fails
+            }
+        }
+        
+        capturedImage = processedImage
+        
+        guard let cgImage = processedImage.cgImage else {
             isAnalyzing = false
             errorMessage = "Unable to process image"
             return
@@ -106,7 +120,7 @@ class CameraViewModel: ObservableObject {
         
         let handler = VNImageRequestHandler(
             cgImage: cgImage,
-            orientation: image.imageOrientation.cgImagePropertyOrientation
+            orientation: processedImage.imageOrientation.cgImagePropertyOrientation
         )
         
         do {

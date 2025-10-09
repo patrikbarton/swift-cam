@@ -18,6 +18,8 @@ class AppStateViewModel: ObservableObject {
     @Published var currentModelNumber: Int = 0
     @Published var totalModels: Int = 3
     @Published var fullScreenCamera: Bool = false // Camera size preference
+    @Published var faceBlurringEnabled: Bool = false // Face privacy protection
+    @Published var blurStyle: BlurStyle = .gaussian // Face blur style
 
     init() {
         Task {

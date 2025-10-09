@@ -119,7 +119,7 @@ struct LiveCameraView: View {
                                 CaptureButton {
                                     liveCameraManager.capturePhoto { image in
                                         if let image = image {
-                                            Task { await cameraManager.classifyImage(image) }
+                                            Task { await cameraManager.classifyImage(image, applyFaceBlur: appStateViewModel.faceBlurringEnabled, blurStyle: appStateViewModel.blurStyle) }
                                         }
                                         handleDismiss()
                                     }
@@ -211,7 +211,7 @@ struct LiveCameraView: View {
                         CaptureButton {
                             liveCameraManager.capturePhoto { image in
                                 if let image = image {
-                                    Task { await cameraManager.classifyImage(image) }
+                                    Task { await cameraManager.classifyImage(image, applyFaceBlur: appStateViewModel.faceBlurringEnabled, blurStyle: appStateViewModel.blurStyle) }
                                 }
                                 handleDismiss()
                             }
@@ -224,10 +224,18 @@ struct LiveCameraView: View {
         }
         .onAppear {
             liveCameraManager.updateModel(to: selectedModel)
+            liveCameraManager.faceBlurringEnabled = appStateViewModel.faceBlurringEnabled
+            liveCameraManager.blurStyle = appStateViewModel.blurStyle
             liveCameraManager.startSession()
         }
         .onDisappear {
             liveCameraManager.stopSession()
+        }
+        .onChange(of: appStateViewModel.faceBlurringEnabled) { _, newValue in
+            liveCameraManager.faceBlurringEnabled = newValue
+        }
+        .onChange(of: appStateViewModel.blurStyle) { _, newValue in
+            liveCameraManager.blurStyle = newValue
         }
     }
 }

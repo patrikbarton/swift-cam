@@ -18,7 +18,7 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             // Left Tab - Home (Photo Library & Results)
-            HomeTabView(viewModel: cameraViewModel, selectedModel: $selectedModel)
+            HomeTabView(viewModel: cameraViewModel, selectedModel: $selectedModel, appStateViewModel: appStateViewModel)
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
@@ -47,6 +47,7 @@ struct ContentView: View {
 struct HomeTabView: View {
     @ObservedObject var viewModel: CameraViewModel
     @Binding var selectedModel: MLModelType
+    @ObservedObject var appStateViewModel: AppStateViewModel
     @State private var selectedImage: PhotosPickerItem? = nil
     
     private var showErrorAlert: Binding<Bool> {
@@ -232,7 +233,7 @@ struct HomeTabView: View {
         do {
             if let data = try? await newItem.loadTransferable(type: Data.self) {
                 if let image = UIImage(data: data) {
-                    await viewModel.classifyImage(image)
+                    await viewModel.classifyImage(image, applyFaceBlur: appStateViewModel.faceBlurringEnabled, blurStyle: appStateViewModel.blurStyle)
                     return
                 } else {
                     throw ImageLoadingError.corruptedData
@@ -514,14 +515,52 @@ struct SettingsTabView: View {
                                 .foregroundStyle(.white.opacity(0.7))
                                 .padding(.horizontal, 24)
                             
-                            CameraSettingToggleRow(
-                                icon: "viewfinder.rectangular",
-                                title: "Full Screen Camera",
-                                description: "Expand camera to full screen or keep it square",
-                                isOn: $appStateViewModel.fullScreenCamera,
-                                color: .appPrimary
-                            )
+                            VStack(spacing: 12) {
+                                CameraSettingToggleRow(
+                                    icon: "viewfinder.rectangular",
+                                    title: "Full Screen Camera",
+                                    description: "Expand camera to full screen or keep it square",
+                                    isOn: $appStateViewModel.fullScreenCamera,
+                                    color: .appPrimary
+                                )
+                                
+                                CameraSettingToggleRow(
+                                    icon: "face.smiling",
+                                    title: "Face Privacy Protection",
+                                    description: "Automatically blur detected faces for privacy",
+                                    isOn: $appStateViewModel.faceBlurringEnabled,
+                                    color: .purple
+                                )
+                            }
                             .padding(.horizontal, 24)
+                        }
+                        
+                        // Privacy Settings Section (Blur Style Picker - only show if face blurring is enabled)
+                        if appStateViewModel.faceBlurringEnabled {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Privacy Style")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 24)
+                                
+                                Text("Choose how faces are obscured")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.7))
+                                    .padding(.horizontal, 24)
+                                
+                                VStack(spacing: 12) {
+                                    ForEach(BlurStyle.allCases, id: \.self) { style in
+                                        BlurStyleRow(
+                                            style: style,
+                                            isSelected: appStateViewModel.blurStyle == style
+                                        ) {
+                                            appStateViewModel.blurStyle = style
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                            }
+                            .transition(.move(edge: .top).combined(with: .opacity))
                         }
                         
                         // System Info Section
@@ -731,6 +770,62 @@ struct CameraSettingToggleRow: View {
         .padding(16)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+// MARK: - Blur Style Row Component
+struct BlurStyleRow: View {
+    let style: BlurStyle
+    let isSelected: Bool
+    let onSelect: () -> Void
+    
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? Color.purple : Color.gray.opacity(0.3))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: iconForStyle(style))
+                        .font(.system(size: 20))
+                        .foregroundStyle(isSelected ? .white : .gray)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(style.rawValue)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                    
+                    Text(style.description)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .lineLimit(2)
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.purple)
+                }
+            }
+            .padding(14)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+    }
+    
+    private func iconForStyle(_ style: BlurStyle) -> String {
+        switch style {
+        case .gaussian:
+            return "eye.slash.fill"
+        case .pixelated:
+            return "square.grid.3x3.fill"
+        case .blackBox:
+            return "rectangle.fill"
+        }
     }
 }
 
