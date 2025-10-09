@@ -37,15 +37,15 @@ struct ZoomControlView: View {
     var body: some View {
         // Only show controls if there are multiple physical back cameras
         if manager.availableBackCameras.count > 1 {
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 ForEach(manager.availableBackCameras.sorted(by: { deviceOrder($0.deviceType) < deviceOrder($1.deviceType) }), id: \.uniqueID) { device in
                     Button(action: {
                         manager.switchToDevice(device)
                     }) {
                         Text(label(for: device))
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
                             .foregroundColor(manager.activeCamera == device ? .appSecondary : .white)
-                            .padding(10)
+                            .frame(width: 44, height: 44)
                             .background(Color.black.opacity(manager.activeCamera == device ? 0.6 : 0.4))
                             .clipShape(Circle())
                     }

@@ -11,11 +11,12 @@ struct ModernResultsList: View {
     let results: [ClassificationResult]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
+        VStack(alignment: .leading, spacing: 18) {
+            // Header with gradient text
+            HStack(alignment: .center, spacing: 12) {
                 Text("Recognition Results")
-                    .font(.system(.title2, design: .rounded, weight: .bold)) // SF Pro
-                    .foregroundColor(.black) // Dark text on white background
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
                 
                 Spacer()
                 
@@ -24,7 +25,8 @@ struct ModernResultsList: View {
                 }
             }
             
-            VStack(spacing: 12) {
+            // Results list
+            VStack(spacing: 10) {
                 ForEach(results.prefix(AppConstants.maxClassificationResults), id: \.identifier) { result in
                     ModernClassificationRow(result: result)
                         .transition(.asymmetric(
@@ -34,16 +36,30 @@ struct ModernResultsList: View {
                 }
             }
         }
-        .padding(20)
+        .padding(24)
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.06), radius: 12, x: 0, y: 2)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.gray.opacity(0.08), lineWidth: 1)
-                )
+            ZStack {
+                // Premium glass morphism
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.ultraThinMaterial)
+                
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.08),
+                                Color.white.opacity(0.02)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                RoundedRectangle(cornerRadius: 28)
+                    .strokeBorder(.white.opacity(0.2), lineWidth: 1.5)
+            }
         )
+        .shadow(color: .black.opacity(0.15), radius: 25, y: 12)
         .animation(.spring(response: AppConstants.animationSpringResponse, dampingFraction: AppConstants.animationDampingFraction), value: results.count)
         .scaleEffect(results.isEmpty ? 1.0 : 1.0)
         .opacity(results.isEmpty ? 0.7 : 1.0)

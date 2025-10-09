@@ -14,13 +14,27 @@ struct ModernImagePreviewView: View {
     
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.08), radius: 16, x: 0, y: 4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
-                )
+            // Premium glass background
+            ZStack {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.ultraThinMaterial)
+                
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.08),
+                                Color.white.opacity(0.02)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                RoundedRectangle(cornerRadius: 28)
+                    .strokeBorder(.white.opacity(0.2), lineWidth: 1.5)
+            }
+            .shadow(color: .black.opacity(0.15), radius: 25, y: 12)
             
             if let image = image {
                 ZStack(alignment: .topTrailing) {
@@ -28,29 +42,46 @@ struct ModernImagePreviewView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(maxHeight: AppConstants.imageMaxHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .padding(8)
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .padding(12)
                         .scaleEffect(isAnalyzing ? 0.98 : 1.0)
                         .animation(.easeInOut(duration: 0.3), value: isAnalyzing)
                     
-                    // X Button to clear image - top right corner
+                    // Premium X Button to clear image
                     if let onClear = onClear, !isAnalyzing {
                         Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 onClear()
                             }
                         }) {
                             ZStack {
                                 Circle()
-                                    .fill(Color.black.opacity(0.7))
-                                    .frame(width: 32, height: 32)
+                                    .fill(.ultraThinMaterial)
+                                
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.black.opacity(0.4),
+                                                Color.black.opacity(0.6)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                
+                                Circle()
+                                    .strokeBorder(.white.opacity(0.3), lineWidth: 1)
                                 
                                 Image(systemName: "xmark")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(.white)
                             }
+                            .frame(width: 36, height: 36)
+                            .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
                         }
-                        .padding(16) // Padding from edge
+                        .buttonStyle(ScaleButtonStyle())
+                        .padding(20)
                         .transition(.scale.combined(with: .opacity))
                     }
                 }
@@ -60,7 +91,10 @@ struct ModernImagePreviewView: View {
                         Circle()
                             .fill(
                                 LinearGradient(
-                                    colors: [Color.gray.opacity(0.1), Color.gray.opacity(0.05)],
+                                    colors: [
+                                        Color.white.opacity(0.15),
+                                        Color.white.opacity(0.08)
+                                    ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -69,54 +103,77 @@ struct ModernImagePreviewView: View {
                         
                         Image(systemName: "camera.fill")
                             .font(.system(size: 32, weight: .light))
-                            .foregroundColor(.gray.opacity(0.6))
+                            .foregroundColor(.white.opacity(0.5))
                     }
                     
                     VStack(spacing: 6) {
                         Text("No Image Selected")
                             .font(.system(size: 20, weight: .semibold, design: .rounded))
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.white)
                         
                         Text("Capture or select a photo to identify objects")
                             .font(.system(size: 15, weight: .regular))
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.white.opacity(0.6))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 20)
                     }
                 }
             }
             
-            // Analysis Overlay
+            // Premium Analysis Overlay
             if isAnalyzing {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.white.opacity(0.95))
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(.ultraThinMaterial)
                     .overlay(
-                        VStack(spacing: 16) {
-                            ZStack {
-                                Circle()
-                                    .stroke(Color.appAccent.opacity(0.2), lineWidth: 3)
-                                    .frame(width: 40, height: 40)
-                                
-                                Circle()
-                                    .trim(from: 0, to: 0.7)
-                                    .stroke(
-                                        AngularGradient(
-                                            colors: [Color.appAccent, Color.appPrimary],
-                                            center: .center
-                                        ),
-                                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                        ZStack {
+                            // Subtle gradient overlay
+                            RoundedRectangle(cornerRadius: 28)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.appAccent.opacity(0.1),
+                                            Color.appSecondary.opacity(0.05)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
                                     )
-                                    .frame(width: 40, height: 40)
-                                    .rotationEffect(.degrees(isAnalyzing ? 360 : 0))
-                                    .animation(.linear(duration: 1.0).repeatForever(autoreverses: false), value: isAnalyzing)
-                            }
+                                )
                             
-                            Text("Analyzing Image...")
-                                .font(.system(size: 16, weight: .medium, design: .rounded))
-                                .foregroundColor(.primary)
+                            VStack(spacing: 20) {
+                                // Animated spinner
+                                ZStack {
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 4)
+                                        .frame(width: 56, height: 56)
+                                    
+                                    Circle()
+                                        .trim(from: 0, to: 0.7)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [Color.appAccent, Color.appSecondary],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                                        )
+                                        .frame(width: 56, height: 56)
+                                        .rotationEffect(.degrees(isAnalyzing ? 360 : 0))
+                                        .animation(.linear(duration: 1.0).repeatForever(autoreverses: false), value: isAnalyzing)
+                                }
+                                
+                                VStack(spacing: 8) {
+                                    Text("Analyzing Image")
+                                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(.white)
+                                    
+                                    Text("Using AI to identify objects...")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundStyle(.white.opacity(0.6))
+                                }
+                            }
                         }
                     )
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
             }
         }
         .frame(minHeight: AppConstants.imageMinHeight, maxHeight: AppConstants.imageMaxHeightContainer)

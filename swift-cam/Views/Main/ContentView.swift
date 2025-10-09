@@ -59,7 +59,7 @@ struct HomeTabView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Liquid Glass background gradient
+                // Premium gradient background
                 LinearGradient(
                     colors: Color.appPrimaryGradient,
                     startPoint: .topLeading,
@@ -68,53 +68,141 @@ struct HomeTabView: View {
                 .ignoresSafeArea()
                 
                 ScrollView {
-                    VStack(spacing: 24) {
-                        // Header
-                        VStack(spacing: 12) {
-                            Text("AI Vision")
-                                .font(.system(size: 34, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                                .padding(.top, 20)
+                    VStack(spacing: 0) {
+                        // Floating Header
+                        VStack(spacing: 16) {
+                            // App Title with Premium Style
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("AI Vision")
+                                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.white, .white.opacity(0.9)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                    
+                                    Text("Intelligent Recognition")
+                                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                                        .foregroundStyle(.white.opacity(0.6))
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 20)
                             
-                            StatusTextView(viewModel: viewModel, selectedModel: selectedModel)
-                        }
-                        
-                        // Image Preview
-                        ModernImagePreviewView(
-                            image: viewModel.capturedImage,
-                            isAnalyzing: viewModel.isAnalyzing,
-                            onClear: {
-                                viewModel.clearImage()
+                            // Modern Status Badge
+                            HStack {
+                                StatusTextView(viewModel: viewModel, selectedModel: selectedModel)
+                                Spacer()
                             }
-                        )
+                            .padding(.horizontal, 24)
+                        }
+                        .padding(.bottom, 32)
                         
-                        // Classification Results
-                        ModernClassificationResultsView(
-                            results: viewModel.classificationResults,
-                            isAnalyzing: viewModel.isAnalyzing,
-                            error: viewModel.errorMessage
-                        )
-                        .padding(.horizontal, 24)
-                        
-                        // Photo Library Button
-                        VStack(spacing: 12) {
-                            PhotosPicker(
-                                selection: $selectedImage,
-                                matching: .images,
-                                photoLibrary: .shared()
-                            ) {
-                                AppleStyleButton(
-                                    title: "Photo Library",
-                                    subtitle: "Choose from your photos",
-                                    icon: "photo.on.rectangle.angled",
-                                    style: .primary
+                        // Main Content Area
+                        VStack(spacing: 24) {
+                            // Hero Section - Image Preview or Empty State
+                            if viewModel.capturedImage != nil || viewModel.isAnalyzing {
+                                ModernImagePreviewView(
+                                    image: viewModel.capturedImage,
+                                    isAnalyzing: viewModel.isAnalyzing,
+                                    onClear: {
+                                        viewModel.clearImage()
+                                    }
                                 )
+                                .transition(.scale.combined(with: .opacity))
+                            } else {
+                                // Premium Empty State
+                                PremiumEmptyStateView()
+                                    .transition(.scale.combined(with: .opacity))
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(viewModel.isLoadingModel || viewModel.isAnalyzing || viewModel.isSwitchingModel)
+                            
+                            // Classification Results (if available)
+                            if !viewModel.classificationResults.isEmpty || viewModel.isAnalyzing {
+                                ModernClassificationResultsView(
+                                    results: viewModel.classificationResults,
+                                    isAnalyzing: viewModel.isAnalyzing,
+                                    error: viewModel.errorMessage
+                                )
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                            }
+                            
+                            // Action Buttons Section
+                            VStack(spacing: 16) {
+                                // Photo Library Button
+                                PhotosPicker(
+                                    selection: $selectedImage,
+                                    matching: .images,
+                                    photoLibrary: .shared()
+                                ) {
+                                    HStack(spacing: 16) {
+                                        // Icon Container
+                                        ZStack {
+                                            Circle()
+                                                .fill(.white.opacity(0.15))
+                                                .frame(width: 56, height: 56)
+                                            
+                                            Image(systemName: "photo.on.rectangle.angled")
+                                                .font(.system(size: 24, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                        }
+                                        
+                                        // Text Content
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Photo Library")
+                                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                                .foregroundStyle(.white)
+                                            
+                                            Text("Choose from your photos")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundStyle(.white.opacity(0.6))
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        // Chevron
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundStyle(.white.opacity(0.4))
+                                    }
+                                    .padding(20)
+                                    .background(
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 24)
+                                                .fill(.ultraThinMaterial)
+                                            
+                                            RoundedRectangle(cornerRadius: 24)
+                                                .fill(
+                                                    LinearGradient(
+                                                        colors: [
+                                                            Color.appAccent.opacity(0.3),
+                                                            Color.appSecondary.opacity(0.2)
+                                                        ],
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    )
+                                                )
+                                            
+                                            RoundedRectangle(cornerRadius: 24)
+                                                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                                        }
+                                    )
+                                    .shadow(color: .black.opacity(0.1), radius: 20, y: 10)
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                                .disabled(viewModel.isLoadingModel || viewModel.isAnalyzing || viewModel.isSwitchingModel)
+                                .opacity((viewModel.isLoadingModel || viewModel.isAnalyzing || viewModel.isSwitchingModel) ? 0.5 : 1)
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                            
+                            // Bottom Spacer
+                            Spacer(minLength: 40)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 40)
                     }
                 }
             }
@@ -162,6 +250,127 @@ struct HomeTabView: View {
         }
         
         selectedImage = nil
+    }
+}
+
+// MARK: - Premium Empty State View
+struct PremiumEmptyStateView: View {
+    @State private var isAnimating = false
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Animated Icon
+            ZStack {
+                // Outer glow rings
+                ForEach(0..<3) { index in
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.appAccent.opacity(0.3 - Double(index) * 0.1),
+                                    Color.appSecondary.opacity(0.2 - Double(index) * 0.05)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 2
+                        )
+                        .frame(width: 140 + CGFloat(index) * 30, height: 140 + CGFloat(index) * 30)
+                        .opacity(isAnimating ? 0.0 : 0.5)
+                        .scaleEffect(isAnimating ? 1.3 : 1.0)
+                        .animation(
+                            .easeOut(duration: 2.0)
+                            .repeatForever(autoreverses: false)
+                            .delay(Double(index) * 0.3),
+                            value: isAnimating
+                        )
+                }
+                
+                // Main icon container
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.appAccent.opacity(0.4),
+                                    Color.appSecondary.opacity(0.3)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 140, height: 140)
+                    
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 130, height: 130)
+                    
+                    Image(systemName: "camera.viewfinder")
+                        .font(.system(size: 56, weight: .light))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.white, .white.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .symbolEffect(.pulse.byLayer, options: .repeating, value: isAnimating)
+                }
+                .shadow(color: Color.appAccent.opacity(0.3), radius: 30, y: 15)
+            }
+            .padding(.vertical, 20)
+            
+            // Text Content
+            VStack(spacing: 12) {
+                Text("Ready to Analyze")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                
+                Text("Select an image to see intelligent\nrecognition results")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 48)
+        .padding(.horizontal, 32)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 32)
+                    .fill(.ultraThinMaterial)
+                
+                RoundedRectangle(cornerRadius: 32)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.05),
+                                Color.white.opacity(0.01)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                RoundedRectangle(cornerRadius: 32)
+                    .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+            }
+        )
+        .padding(.horizontal, 24)
+        .shadow(color: .black.opacity(0.1), radius: 30, y: 15)
+        .onAppear {
+            isAnimating = true
+        }
+    }
+}
+
+// MARK: - Scale Button Style
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 
