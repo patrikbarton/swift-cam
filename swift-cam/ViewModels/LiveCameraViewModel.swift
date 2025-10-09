@@ -21,6 +21,8 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     @Published var isLoadingModel = false
     @Published var lowResPreviewImage: UIImage? = nil
     var showLowResPreview = false
+    var faceBlurringEnabled = false
+    var blurStyle: BlurStyle = .gaussian
     
     @Published var availableBackCameras: [AVCaptureDevice] = []
     @Published var activeCamera: AVCaptureDevice?
@@ -38,6 +40,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     private var currentModel: MLModelType = .mobileNet
     private var classificationRequest: VNCoreMLRequest?
     private let modelService = ModelService.shared
+    private let faceBlurService = FaceBlurringService()
     
     // For low-res preview generation
     private var modelInputSize: CGSize = CGSize(width: 224, height: 224)
@@ -187,6 +190,20 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         self.photoOutput.capturePhoto(with: settings, delegate: self)
     }
     
+    /// Apply face blurring to captured photo
+    private func applyFaceBlurIfNeeded(to image: UIImage) async -> UIImage {
+        guard faceBlurringEnabled else { return image }
+        
+        do {
+            let blurred = try await faceBlurService.blurFaces(in: image, blurRadius: 20.0, blurStyle: blurStyle)
+            Logger.privacy.info("🔒 Face blurring applied to live capture")
+            return blurred
+        } catch {
+            Logger.privacy.warning("⚠️ Face blurring failed on live capture: \(error.localizedDescription)")
+            return image
+        }
+    }
+    
     @MainActor
     private func processLiveClassifications(for request: VNRequest, error: Error?) {
         guard error == nil, let observations = request.results as? [VNClassificationObservation] else { return }
@@ -208,8 +225,12 @@ extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
             return
         }
         
-        captureCompletion?(image)
-        captureCompletion = nil
+        // Apply face blurring if enabled before returning
+        Task {
+            let processedImage = await applyFaceBlurIfNeeded(to: image)
+            captureCompletion?(processedImage)
+            captureCompletion = nil
+        }
     }
 }
 
@@ -248,10 +269,40 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
                 
                 let scaledImage = croppedCIImage.transformed(by: transform)
                 
-                if let cgImage = self.context.createCGImage(scaledImage, from: scaledImage.extent) {
-                    let finalImage = UIImage(cgImage: cgImage)
-                    DispatchQueue.main.async {
-                        self.lowResPreviewImage = finalImage
+                // Apply face blurring to preview if enabled
+                if self.faceBlurringEnabled {
+                    Task {
+                        var finalImageToDisplay = scaledImage
+                        do {
+                            if let blurredImage = try await self.faceBlurService.blurFaces(in: pixelBuffer, blurRadius: 10.0, blurStyle: self.blurStyle) {
+                                // Scale the blurred image to preview size
+                                let blurredExtent = blurredImage.extent
+                                let inputWidth = await self.modelInputSize.width
+                                let inputHeight = await self.modelInputSize.height
+                                let blurScale = min(
+                                    inputWidth / blurredExtent.width,
+                                    inputHeight / blurredExtent.height
+                                )
+                                let blurTransform = CGAffineTransform(scaleX: blurScale, y: blurScale)
+                                finalImageToDisplay = blurredImage.transformed(by: blurTransform)
+                            }
+                        } catch {
+                            // Silently continue with unblurred preview
+                        }
+                        
+                        if let cgImage = self.context.createCGImage(finalImageToDisplay, from: finalImageToDisplay.extent) {
+                            let finalImage = UIImage(cgImage: cgImage)
+                            DispatchQueue.main.async {
+                                self.lowResPreviewImage = finalImage
+                            }
+                        }
+                    }
+                } else {
+                    if let cgImage = self.context.createCGImage(scaledImage, from: scaledImage.extent) {
+                        let finalImage = UIImage(cgImage: cgImage)
+                        DispatchQueue.main.async {
+                            self.lowResPreviewImage = finalImage
+                        }
                     }
                 }
             }
