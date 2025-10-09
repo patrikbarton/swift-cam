@@ -12,30 +12,53 @@ struct ModernConfidenceBadge: View {
     
     var body: some View {
         HStack(spacing: 6) {
+            // Pulsing indicator
             Circle()
-                .fill(badgeColor)
-                .frame(width: 8, height: 8)
+                .fill(
+                    RadialGradient(
+                        colors: [badgeColor, badgeColor.opacity(0.8)],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 6
+                    )
+                )
+                .frame(width: 10, height: 10)
+                .shadow(color: badgeColor.opacity(0.6), radius: 4, y: 0)
             
             Text("\(Int(confidence * 100))%")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundColor(badgeColor)
+                .foregroundStyle(.white)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
         .background(
-            Capsule()
-                .fill(badgeColor.opacity(0.1))
-                .overlay(
-                    Capsule()
-                        .stroke(badgeColor.opacity(0.3), lineWidth: 1)
-                )
+            ZStack {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                badgeColor.opacity(0.3),
+                                badgeColor.opacity(0.2)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                
+                Capsule()
+                    .strokeBorder(badgeColor.opacity(0.5), lineWidth: 1.5)
+            }
         )
+        .shadow(color: badgeColor.opacity(0.3), radius: 8, y: 4)
     }
     
     private var badgeColor: Color {
         switch confidence {
         case 0.8...1.0: return .green
-        case 0.6...0.8: return .blue
+        case 0.6...0.8: return .appAccent
         case 0.4...0.6: return .orange
         default: return .red
         }
