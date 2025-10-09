@@ -12,22 +12,22 @@ struct ModernEmptyResultsView: View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color.blue.opacity(0.1))
+                    .fill(Color.appAccent.opacity(0.15))
                     .frame(width: 48, height: 48)
                 
                 Image(systemName: "sparkles")
                     .font(.system(size: 22, weight: .medium))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.appAccent)
             }
             
             VStack(spacing: 4) {
                 Text("Ready to Analyze")
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    .foregroundColor(.primary)
+                    .font(.system(.title3, design: .rounded, weight: .semibold)) // SF Pro
+                    .foregroundColor(.black) // Dark text on white background
                 
                 Text("Select an image to see intelligent recognition results")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .font(.system(.subheadline, design: .default, weight: .medium)) // SF Pro
+                    .foregroundColor(.gray) // Gray for secondary text
                     .multilineTextAlignment(.center)
             }
         }

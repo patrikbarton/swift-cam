@@ -24,12 +24,12 @@ struct ModernClassificationRow: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(result.displayName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .font(.system(.body, design: .default, weight: .semibold)) // SF Pro
+                    .foregroundColor(.black) // Dark text on white background
                 
                 Text("Confidence: \(Int(result.confidence * 100))%")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .font(.system(.subheadline, design: .default, weight: .medium)) // SF Pro
+                    .foregroundColor(.gray) // Gray text for secondary info
             }
             
             Spacer()

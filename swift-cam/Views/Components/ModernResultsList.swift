@@ -14,8 +14,8 @@ struct ModernResultsList: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Recognition Results")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
+                    .font(.system(.title2, design: .rounded, weight: .bold)) // SF Pro
+                    .foregroundColor(.black) // Dark text on white background
                 
                 Spacer()
                 

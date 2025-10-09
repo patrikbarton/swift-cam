@@ -61,8 +61,8 @@ struct AppleStyleButton: View {
     
     private var backgroundColor: Color {
         switch style {
-        case .primary: return Color.blue
-        case .secondary: return Color.white
+        case .primary: return Color.appAccent
+        case .secondary: return Color.appLight
         case .tertiary: return Color.gray.opacity(0.1)
         }
     }
@@ -78,7 +78,7 @@ struct AppleStyleButton: View {
     private var iconBackgroundColor: Color {
         switch style {
         case .primary: return Color.white.opacity(0.2)
-        case .secondary: return Color.blue.opacity(0.1)
+        case .secondary: return Color.appAccent.opacity(0.15)
         case .tertiary: return Color.gray.opacity(0.15)
         }
     }
@@ -86,7 +86,7 @@ struct AppleStyleButton: View {
     private var iconForegroundColor: Color {
         switch style {
         case .primary: return .white
-        case .secondary: return .blue
+        case .secondary: return .appAccent
         case .tertiary: return .primary
         }
     }

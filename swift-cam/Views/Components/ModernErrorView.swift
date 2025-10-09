@@ -24,12 +24,12 @@ struct ModernErrorView: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 Text("Processing Error")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .font(.system(.body, design: .default, weight: .semibold)) // SF Pro
+                    .foregroundColor(.black) // Dark text on white background
                 
                 Text(message)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .font(.system(.subheadline, design: .default, weight: .medium)) // SF Pro
+                    .foregroundColor(.gray) // Gray for secondary text
             }
             
             Spacer()

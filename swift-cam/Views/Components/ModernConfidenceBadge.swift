@@ -17,7 +17,7 @@ struct ModernConfidenceBadge: View {
                 .frame(width: 8, height: 8)
             
             Text("\(Int(confidence * 100))%")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .font(.system(.subheadline, design: .rounded, weight: .bold)) // SF Pro
                 .foregroundColor(badgeColor)
         }
         .padding(.horizontal, 12)
@@ -35,7 +35,7 @@ struct ModernConfidenceBadge: View {
     private var badgeColor: Color {
         switch confidence {
         case 0.8...1.0: return .green
-        case 0.6...0.8: return .blue
+        case 0.6...0.8: return .appAccent
         case 0.4...0.6: return .orange
         default: return .red
         }

@@ -12,16 +12,16 @@ struct CaptureButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text("Capture & Analyze")
-                .font(.headline)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .cornerRadius(16)
+            ZStack {
+                Circle()
+                    .strokeBorder(Color.white, lineWidth: 4)
+                    .frame(width: 70, height: 70)
+                
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 60, height: 60)
+            }
         }
-        .padding(.horizontal)
     }
 }
 

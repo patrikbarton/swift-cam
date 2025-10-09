@@ -10,6 +10,7 @@ import SwiftUI
 struct ModernImagePreviewView: View {
     let image: UIImage?
     let isAnalyzing: Bool
+    var onClear: (() -> Void)? = nil // Optional closure for clearing image
     
     var body: some View {
         ZStack {
@@ -22,14 +23,37 @@ struct ModernImagePreviewView: View {
                 )
             
             if let image = image {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: AppConstants.imageMaxHeight)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .padding(8)
-                    .scaleEffect(isAnalyzing ? 0.98 : 1.0)
-                    .animation(.easeInOut(duration: 0.3), value: isAnalyzing)
+                ZStack(alignment: .topTrailing) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: AppConstants.imageMaxHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .padding(8)
+                        .scaleEffect(isAnalyzing ? 0.98 : 1.0)
+                        .animation(.easeInOut(duration: 0.3), value: isAnalyzing)
+                    
+                    // X Button to clear image - top right corner
+                    if let onClear = onClear, !isAnalyzing {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                onClear()
+                            }
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.black.opacity(0.7))
+                                    .frame(width: 32, height: 32)
+                                
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .padding(16) // Padding from edge
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
             } else {
                 VStack(spacing: 20) {
                     ZStack {
@@ -70,14 +94,14 @@ struct ModernImagePreviewView: View {
                         VStack(spacing: 16) {
                             ZStack {
                                 Circle()
-                                    .stroke(Color.blue.opacity(0.2), lineWidth: 3)
+                                    .stroke(Color.appAccent.opacity(0.2), lineWidth: 3)
                                     .frame(width: 40, height: 40)
                                 
                                 Circle()
                                     .trim(from: 0, to: 0.7)
                                     .stroke(
                                         AngularGradient(
-                                            colors: [Color.blue, Color.purple],
+                                            colors: [Color.appAccent, Color.appPrimary],
                                             center: .center
                                         ),
                                         style: StrokeStyle(lineWidth: 3, lineCap: .round)
@@ -103,7 +127,8 @@ struct ModernImagePreviewView: View {
 #Preview("With Image") {
     ModernImagePreviewView(
         image: UIImage(systemName: "photo"),
-        isAnalyzing: false
+        isAnalyzing: false,
+        onClear: { print("Clear tapped") }
     )
     .padding()
     .background(Color(.systemGroupedBackground))
@@ -112,7 +137,8 @@ struct ModernImagePreviewView: View {
 #Preview("Analyzing") {
     ModernImagePreviewView(
         image: UIImage(systemName: "photo"),
-        isAnalyzing: true
+        isAnalyzing: true,
+        onClear: { print("Clear tapped") }
     )
     .padding()
     .background(Color(.systemGroupedBackground))
@@ -121,7 +147,8 @@ struct ModernImagePreviewView: View {
 #Preview("No Image") {
     ModernImagePreviewView(
         image: nil,
-        isAnalyzing: false
+        isAnalyzing: false,
+        onClear: nil
     )
     .padding()
     .background(Color(.systemGroupedBackground))

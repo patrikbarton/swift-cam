@@ -38,7 +38,7 @@ struct ContentView: View {
                 }
                 .tag(2)
         }
-        .tint(.blue)
+        .tint(.appAccent)
         .preferredColorScheme(.dark) // Liquid Glass looks best in dark mode
     }
 }
@@ -49,12 +49,19 @@ struct HomeTabView: View {
     @Binding var selectedModel: MLModelType
     @State private var selectedImage: PhotosPickerItem? = nil
     
+    private var showErrorAlert: Binding<Bool> {
+        Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.clearError() } }
+        )
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
                 // Liquid Glass background gradient
                 LinearGradient(
-                    colors: [.blue.opacity(0.4), .purple.opacity(0.3)],
+                    colors: Color.appPrimaryGradient,
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -75,9 +82,11 @@ struct HomeTabView: View {
                         // Image Preview
                         ModernImagePreviewView(
                             image: viewModel.capturedImage,
-                            isAnalyzing: viewModel.isAnalyzing
+                            isAnalyzing: viewModel.isAnalyzing,
+                            onClear: {
+                                viewModel.clearImage()
+                            }
                         )
-                        .padding(.horizontal, 24)
                         
                         // Classification Results
                         ModernClassificationResultsView(
@@ -103,24 +112,6 @@ struct HomeTabView: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             .disabled(viewModel.isLoadingModel || viewModel.isAnalyzing || viewModel.isSwitchingModel)
-                            
-                            // Clear Button (only when needed)
-                            if viewModel.capturedImage != nil {
-                                Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        viewModel.clearImage()
-                                    }
-                                }) {
-                                    AppleStyleButton(
-                                        title: "Clear Image",
-                                        subtitle: "Start over",
-                                        icon: "arrow.counterclockwise",
-                                        style: .secondary
-                                    )
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .transition(.opacity.combined(with: .scale))
-                            }
                         }
                         .padding(.horizontal, 24)
                         .padding(.bottom, 40)
@@ -134,7 +125,7 @@ struct HomeTabView: View {
                 await handleImageSelection(newItem)
             }
         }
-        .alert("Unable to Process", isPresented: .constant(viewModel.errorMessage != nil)) {
+        .alert("Unable to Process", isPresented: showErrorAlert) {
             Button("OK") {
                 viewModel.clearError()
             }
@@ -218,53 +209,21 @@ struct CameraTabView: View {
     let selectedModel: MLModelType
     @Binding var selectedTab: Int
     @ObservedObject var appStateViewModel: AppStateViewModel
-    @State private var showingLiveCamera = false
+    @StateObject private var liveCameraManager = LiveCameraViewModel()
     
     var body: some View {
-        ZStack {
-            // Liquid Glass background
-            LinearGradient(
-                colors: [.cyan.opacity(0.4), .blue.opacity(0.3)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            
-            VStack(spacing: 24) {
-                Spacer()
-                
-                // Camera Icon
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 80))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.cyan, .blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                
-                Text("Live Camera")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                
-                Text("Opening camera...")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(.white.opacity(0.7))
-                
-                Spacer()
+        // Camera directly embedded in tab - Tab Bar stays visible!
+        LiveCameraView(
+            cameraManager: viewModel, 
+            selectedModel: selectedModel, 
+            appStateViewModel: appStateViewModel, // Pass ViewModel instead of value
+            liveCameraManager: liveCameraManager,
+            onCustomDismiss: {
+                // When back button pressed, go back to Home tab
+                selectedTab = 0
             }
-        }
-        .onAppear {
-            // Automatically open camera when tab is selected
-            showingLiveCamera = true
-        }
-        .fullScreenCover(isPresented: $showingLiveCamera, onDismiss: {
-            // When camera is dismissed, go back to Home tab
-            selectedTab = 0
-        }) {
-            LiveCameraView(cameraManager: viewModel, selectedModel: selectedModel, fullScreenCamera: appStateViewModel.fullScreenCamera)
-        }
+        )
+        .ignoresSafeArea(.all, edges: .top) // Full screen camera but tab bar visible
     }
 }
 
@@ -279,7 +238,7 @@ struct SettingsTabView: View {
             ZStack {
                 // Liquid Glass background
                 LinearGradient(
-                    colors: [.purple.opacity(0.4), .pink.opacity(0.3)],
+                    colors: Color.appMixedGradient2,
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -293,7 +252,7 @@ struct SettingsTabView: View {
                                 .font(.system(size: 60))
                                 .foregroundStyle(
                                     LinearGradient(
-                                        colors: [.purple, .pink],
+                                        colors: [.appAccent, .appSecondary],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
@@ -351,7 +310,7 @@ struct SettingsTabView: View {
                                 title: "Full Screen Camera",
                                 description: "Expand camera to full screen or keep it square",
                                 isOn: $appStateViewModel.fullScreenCamera,
-                                color: .cyan
+                                color: .appPrimary
                             )
                             .padding(.horizontal, 24)
                         }
@@ -436,7 +395,7 @@ struct ModelSettingRow: View {
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
-                        .fill(isSelected ? Color.blue : Color.gray.opacity(0.3))
+                        .fill(isSelected ? Color.appAccent : Color.gray.opacity(0.3))
                         .frame(width: 50, height: 50)
                     
                     if viewModel.isSwitchingModel && isSelected {
@@ -466,7 +425,7 @@ struct ModelSettingRow: View {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 22))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appAccent)
                 }
             }
             .padding(16)
@@ -663,7 +622,7 @@ private struct ModelSelectorView: View {
                     VStack(spacing: 8) {
                         ZStack {
                             Circle()
-                                .fill(selectedModel == model ? Color.blue : Color.white.opacity(0.2))
+                                .fill(selectedModel == model ? Color.appAccent : Color.white.opacity(0.2))
                                 .frame(width: 60, height: 60)
                             
                             if viewModel.isSwitchingModel && selectedModel == model {
@@ -689,65 +648,6 @@ private struct ModelSelectorView: View {
         .padding(.vertical, 16)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 20))
-    }
-}
-
-// MARK: - Action Buttons View
-private struct ActionButtonsView: View {
-    @ObservedObject var viewModel: CameraViewModel
-    @Binding var selectedImage: PhotosPickerItem?
-    @Binding var showingLiveCamera: Bool
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            // Primary Action - Live Camera
-            Button(action: {
-                showingLiveCamera = true
-            }) {
-                AppleStyleButton(
-                    title: "Live Camera",
-                    subtitle: "Real-time object detection",
-                    icon: "viewfinder",
-                    style: .primary
-                )
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            // Secondary Action - Photo Library
-            PhotosPicker(
-                selection: $selectedImage,
-                matching: .images,
-                photoLibrary: .shared()
-            ) {
-                AppleStyleButton(
-                    title: "Photo Library",
-                    subtitle: "Choose from your photos",
-                    icon: "photo.on.rectangle.angled",
-                    style: .secondary
-                )
-            }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(viewModel.isLoadingModel || viewModel.isAnalyzing || viewModel.isSwitchingModel)
-            
-            // Tertiary Action - Clear (only when needed)
-            if viewModel.capturedImage != nil {
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        viewModel.clearImage()
-                    }
-                }) {
-                    AppleStyleButton(
-                        title: "Clear Image",
-                        subtitle: "Start over",
-                        icon: "arrow.counterclockwise",
-                        style: .tertiary
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-                .transition(.opacity.combined(with: .scale))
-            }
-        }
-        .padding(.horizontal, 24)
     }
 }
 

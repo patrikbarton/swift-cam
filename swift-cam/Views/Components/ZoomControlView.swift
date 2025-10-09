@@ -44,7 +44,7 @@ struct ZoomControlView: View {
                     }) {
                         Text(label(for: device))
                             .font(.system(size: 14, weight: .bold, design: .monospaced))
-                            .foregroundColor(manager.activeCamera == device ? .yellow : .white)
+                            .foregroundColor(manager.activeCamera == device ? .appSecondary : .white)
                             .padding(10)
                             .background(Color.black.opacity(manager.activeCamera == device ? 0.6 : 0.4))
                             .clipShape(Circle())
