@@ -33,11 +33,17 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     @Published var topCandidates: [CaptureCandidate] = []
     private var bestShotCandidates: [CaptureCandidate] = []
     private var sequenceTimer: Timer?
+    private var pendingBestShotResult: ClassificationResult? = nil
+    private var lastBestShotTime: Date = .distantPast
 
     struct CaptureCandidate: Equatable, Identifiable {
         let id = UUID()
-        let image: UIImage
+        let imageData: Data
         let result: ClassificationResult
+        
+        var image: UIImage? {
+            UIImage(data: imageData)
+        }
         
         static func == (lhs: LiveCameraViewModel.CaptureCandidate, rhs: LiveCameraViewModel.CaptureCandidate) -> Bool {
             lhs.id == rhs.id
@@ -314,15 +320,24 @@ class LiveCameraViewModel: NSObject, ObservableObject {
 // MARK: - Camera Delegate Extensions
 extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        guard let imageData = photo.fileDataRepresentation(),
-              let image = UIImage(data: imageData) else {
+        guard let imageData = photo.fileDataRepresentation() else {
             captureCompletion?(nil)
             return
         }
         
-        // Apply face blurring if enabled before returning
+        // Check if this is a "Best Shot" capture
+        if let result = pendingBestShotResult {
+            let candidate = CaptureCandidate(imageData: imageData, result: result)
+            bestShotCandidates.append(candidate)
+            Logger.bestShot.info("Successfully captured hi-res candidate for \(result.identifier).")
+            pendingBestShotResult = nil // Reset pending result
+            return // End here for best shot captures
+        }
+        
+        // If not a best shot capture, proceed with normal manual capture flow
+        let image = UIImage(data: imageData)
         Task {
-            let processedImage = await applyFaceBlurIfNeeded(to: image)
+            let processedImage = await applyFaceBlurIfNeeded(to: image!)
             captureCompletion?(processedImage)
             captureCompletion = nil
         }
@@ -422,15 +437,18 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
         
         // --- Best Shot Candidate Capture ---
         if isBestShotSequenceActive, !bestShotTargetLabel.isEmpty {
+            let now = Date()
+            // Throttle captures to once per second
+            guard now.timeIntervalSince(lastBestShotTime) > 1.0 else { return }
+
             // Check if the top result matches the specific target label
             if let bestResult = liveResults.first(where: { $0.identifier.lowercased().contains(bestShotTargetLabel.lowercased()) }),
                bestResult.confidence > 0.8 {
                 
-                if let image = UIImage(sampleBuffer: sampleBuffer, orientation: .right) {
-                    let candidate = CaptureCandidate(image: image, result: bestResult)
-                    bestShotCandidates.append(candidate)
-                    Logger.bestShot.debug("Adding best shot candidate: \(bestResult.identifier) @ \(bestResult.confidence)")
-                }
+                Logger.bestShot.debug("High-confidence object found: \(bestResult.identifier). Triggering hi-res capture.")
+                self.pendingBestShotResult = bestResult
+                self.lastBestShotTime = now
+                self.photoOutput.capturePhoto(with: AVCapturePhotoSettings(), delegate: self)
             }
         }
     }

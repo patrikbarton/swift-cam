@@ -15,7 +15,7 @@ struct BestShotResultsView: View {
     // The action to perform when the view is dismissed
     let onDismiss: () -> Void
     
-    @State private var selectedImages: [UIImage] = []
+    @State private var selectedImageData: [Data] = []
     private let photoSaver = PhotoSaver()
     @Environment(\.dismiss) private var dismiss
 
@@ -45,8 +45,8 @@ struct BestShotResultsView: View {
                         
                         // Image candidates grid
                         ForEach(candidates) { candidate in
-                            ImageCandidateRow(candidate: candidate, isSelected: isSelected(candidate.image)) {
-                                toggleSelection(candidate.image)
+                            ImageCandidateRow(candidate: candidate, isSelected: isSelected(candidate.imageData)) {
+                                toggleSelection(candidate.imageData)
                             }
                         }
                         
@@ -65,28 +65,28 @@ struct BestShotResultsView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save Selected") {
-                        for image in selectedImages {
-                            photoSaver.saveImage(image)
+                        for data in selectedImageData {
+                            photoSaver.saveImageData(data)
                         }
                         onDismiss()
                     }
                     .bold()
                     .tint(.appAccent)
-                    .disabled(selectedImages.isEmpty)
+                    .disabled(selectedImageData.isEmpty)
                 }
             }
         }
     }
     
-    private func isSelected(_ image: UIImage) -> Bool {
-        selectedImages.contains(image)
+    private func isSelected(_ data: Data) -> Bool {
+        selectedImageData.contains(data)
     }
     
-    private func toggleSelection(_ image: UIImage) {
-        if let index = selectedImages.firstIndex(of: image) {
-            selectedImages.remove(at: index)
+    private func toggleSelection(_ data: Data) {
+        if let index = selectedImageData.firstIndex(of: data) {
+            selectedImageData.remove(at: index)
         } else {
-            selectedImages.append(image)
+            selectedImageData.append(data)
         }
     }
 }
@@ -100,28 +100,35 @@ struct ImageCandidateRow: View {
     var body: some View {
         Button(action: onSelect) {
             ZStack(alignment: .topTrailing) {
-                Image(uiImage: candidate.image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(height: 300)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .overlay(
-                        // Info overlay
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Text(candidate.result.identifier.capitalized)
-                                    .font(.callout).bold()
+                if let image = candidate.image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 300)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .overlay(
+                            // Info overlay
+                            VStack {
                                 Spacer()
-                                Text("\(Int(candidate.result.confidence * 100))%")
-                                    .font(.callout)
+                                HStack {
+                                    Text(candidate.result.identifier.capitalized)
+                                        .font(.callout).bold()
+                                    Spacer()
+                                    Text("\(Int(candidate.result.confidence * 100))%")
+                                        .font(.callout)
+                                }
+                                .padding()
+                                .foregroundColor(.white)
+                                .background(Color.black.opacity(0.5))
                             }
-                            .padding()
-                            .foregroundColor(.white)
-                            .background(Color.black.opacity(0.5))
-                        }
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                } else {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.black)
+                        .frame(height: 300)
+                        .overlay(Text("Preview not available").foregroundColor(.white))
+                }
                 
                 // Selection checkmark
                 if isSelected {
@@ -140,17 +147,17 @@ struct ImageCandidateRow: View {
     }
 }
 
-#if DEBUG
-// MARK: - Preview
-#Preview {
-    // Create some dummy data for the preview
-    let dummyResult = ClassificationResult(identifier: "Golden Retriever", confidence: 0.92)
-    let dummyImage = UIImage(systemName: "photo")!
-    let candidates = [
-        LiveCameraViewModel.CaptureCandidate(image: dummyImage, result: dummyResult),
-        LiveCameraViewModel.CaptureCandidate(image: UIImage(systemName: "photo.fill")!, result: ClassificationResult(identifier: "Labrador", confidence: 0.88))
-    ]
-    
-    return BestShotResultsView(candidates: candidates, onDismiss: {})
-}
-#endif
+//#if DEBUG
+//// MARK: - Preview
+//#Preview {
+//    // Create some dummy data for the preview
+//    let dummyResult = ClassificationResult(identifier: "Golden Retriever", confidence: 0.92)
+//    let dummyImage = UIImage(systemName: "photo")!
+//    let candidates = [
+//        LiveCameraViewModel.CaptureCandidate(image: dummyImage, result: dummyResult),
+//        LiveCameraViewModel.CaptureCandidate(image: UIImage(systemName: "photo.fill")!, result: ClassificationResult(identifier: "Labrador", confidence: 0.88))
+//    ]
+//    
+//    return BestShotResultsView(candidates: candidates, onDismiss: {})
+//}
+//#endif
