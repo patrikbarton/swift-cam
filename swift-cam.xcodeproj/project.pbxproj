@@ -150,7 +150,8 @@
 /* Begin XCBuildConfiguration section */
 		C95FB8E62E81929500F47490 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53A7FDBCCF20439E9415C346 /* swift-cam/DeveloperSettings.xcconfig */;
+			baseConfigurationReferenceAnchor = C95FB8DF2E81929400F47490 /* swift-cam */;
+			baseConfigurationReferenceRelativePath = DeveloperSettings.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -213,7 +214,8 @@
 		};
 		C95FB8E72E81929500F47490 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53A7FDBCCF20439E9415C346 /* swift-cam/DeveloperSettings.xcconfig */;
+			baseConfigurationReferenceAnchor = C95FB8DF2E81929400F47490 /* swift-cam */;
+			baseConfigurationReferenceRelativePath = DeveloperSettings.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -268,7 +270,8 @@
 		};
 		C95FB8E92E81929500F47490 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53A7FDBCCF20439E9415C346 /* swift-cam/DeveloperSettings.xcconfig */;
+			baseConfigurationReferenceAnchor = C95FB8DF2E81929400F47490 /* swift-cam */;
+			baseConfigurationReferenceRelativePath = DeveloperSettings.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -316,7 +319,8 @@
 		};
 		C95FB8EA2E81929500F47490 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53A7FDBCCF20439E9415C346 /* swift-cam/DeveloperSettings.xcconfig */;
+			baseConfigurationReferenceAnchor = C95FB8DF2E81929400F47490 /* swift-cam */;
+			baseConfigurationReferenceRelativePath = DeveloperSettings.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
