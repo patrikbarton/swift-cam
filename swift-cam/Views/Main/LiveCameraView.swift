@@ -47,6 +47,7 @@ struct LiveCameraView: View {
                 ZStack {
                     // Camera Preview Layer (Full Screen)
                     CameraPreviewView(session: liveCameraManager.session)
+                        .border(liveCameraManager.shouldHighlight ? Color.green : Color.clear, width: 5)
                         .ignoresSafeArea()
                     
                     // Low-resolution Overlay (Debug Mode)
@@ -144,6 +145,7 @@ struct LiveCameraView: View {
                         ZStack {
                             // Camera Preview Layer with .resizeAspectFill
                             CameraPreviewView(session: liveCameraManager.session)
+                                .border(liveCameraManager.shouldHighlight ? Color.green : Color.clear, width: 5)
                                 .clipShape(Rectangle())
 
                             // Low-resolution Overlay (Debug Mode)
@@ -226,6 +228,7 @@ struct LiveCameraView: View {
             liveCameraManager.updateModel(to: selectedModel)
             liveCameraManager.faceBlurringEnabled = appStateViewModel.faceBlurringEnabled
             liveCameraManager.blurStyle = appStateViewModel.blurStyle
+            liveCameraManager.highlightRules = appStateViewModel.highlightRules // Set initial rules
             liveCameraManager.startSession()
         }
         .onDisappear {
@@ -236,6 +239,9 @@ struct LiveCameraView: View {
         }
         .onChange(of: appStateViewModel.blurStyle) { _, newValue in
             liveCameraManager.blurStyle = newValue
+        }
+        .onChange(of: appStateViewModel.highlightRules) { _, newRules in
+            liveCameraManager.highlightRules = newRules
         }
     }
 }

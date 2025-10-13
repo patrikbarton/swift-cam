@@ -535,6 +535,51 @@ struct SettingsTabView: View {
                             .padding(.horizontal, 24)
                         }
                         
+                        // Highlight Settings Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Highlight Settings")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 24)
+                            
+                            VStack(spacing: 12) {
+                                NavigationLink(destination: HighlightSettingsView(highlightRules: $appStateViewModel.highlightRules, modelLabels: viewModel.modelLabels)) {
+                                    HStack(spacing: 16) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.appAccent.opacity(0.2))
+                                                .frame(width: 50, height: 50)
+                                            
+                                            Image(systemName: "sparkles")
+                                                .font(.system(size: 22))
+                                                .foregroundStyle(Color.appAccent)
+                                        }
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Highlight Rules")
+                                                .font(.system(size: 17, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                            
+                                            Text("Configure objects to highlight in the camera")
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundStyle(.white.opacity(0.6))
+                                                .lineLimit(2)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundStyle(.white.opacity(0.5))
+                                    }
+                                    .padding(16)
+                                    .background(.ultraThinMaterial)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                        }
+
                         // Privacy Settings Section (Blur Style Picker - only show if face blurring is enabled)
                         if appStateViewModel.faceBlurringEnabled {
                             VStack(alignment: .leading, spacing: 16) {

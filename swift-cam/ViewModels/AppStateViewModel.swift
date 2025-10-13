@@ -21,13 +21,40 @@ class AppStateViewModel: ObservableObject {
     @Published var faceBlurringEnabled: Bool = false // Face privacy protection
     @Published var blurStyle: BlurStyle = .gaussian // Face blur style
 
+    @Published var highlightRules: [String: Double] = ["keyboard": 0.8] {
+        didSet {
+            saveHighlightRules()
+        }
+    }
+
+    private let highlightRulesKey = "highlightRules"
+
     init() {
+        loadHighlightRules()
+        
         Task {
             if AppConstants.preloadModels {
                 await startPreloading()
             } else {
                 self.isLoading = false
             }
+        }
+    }
+
+    private func loadHighlightRules() {
+        if let data = UserDefaults.standard.data(forKey: highlightRulesKey) {
+            if let decodedRules = try? JSONDecoder().decode([String: Double].self, from: data) {
+                self.highlightRules = decodedRules
+                return
+            }
+        }
+        // Load default if nothing in UserDefaults
+        self.highlightRules = ["keyboard": 0.8, "mouse": 0.8, "laptop": 0.8]
+    }
+
+    private func saveHighlightRules() {
+        if let encoded = try? JSONEncoder().encode(highlightRules) {
+            UserDefaults.standard.set(encoded, forKey: highlightRulesKey)
         }
     }
 

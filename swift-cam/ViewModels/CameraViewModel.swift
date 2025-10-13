@@ -24,6 +24,7 @@ class CameraViewModel: ObservableObject {
     @Published var isSwitchingModel = false
     @Published var currentComputeUnit: String = ""
     @Published var isComputeUnitVerified: Bool = false
+    @Published var modelLabels: [String] = []
     
     private var isCurrentlySwitching = false
     private var currentModel: MLModelType = .mobileNet
@@ -49,13 +50,23 @@ class CameraViewModel: ObservableObject {
         
         loadingModelName = modelType.displayName
         isLoadingModel = true
+        modelLabels = [] // Clear previous labels
         
         do {
-            let request = try await modelService.createModel(for: modelType)
+            // 1. Load the MLModel from the service
+            let mlModel = try await modelService.loadCoreMLModel(for: modelType)
+            
+            // 2. Create the VNCoreMLModel wrapper
+            let visionModel = try VNCoreMLModel(for: mlModel)
+            
+            // 3. Create the request (no completion handler needed for this VM)
+            let request = VNCoreMLRequest(model: visionModel)
+            
             currentModel = modelType
             classificationRequest = request
             ConditionalLogger.debug(Logger.model, "✅ Loaded \(modelType.displayName)")
             await verifyComputeUnit(for: modelType)
+            await loadLabels(for: modelType) // Load labels
         } catch {
             Logger.model.error("❌ Failed to load \(modelType.displayName): \(error.localizedDescription)")
             errorMessage = "Failed to load model: \(error.localizedDescription)"
@@ -63,6 +74,17 @@ class CameraViewModel: ObservableObject {
         
         isLoadingModel = false
         loadingModelName = ""
+    }
+    
+    private func loadLabels(for modelType: MLModelType) async {
+        do {
+            let labels = try await modelService.getLabels(for: modelType)
+            await MainActor.run { self.modelLabels = labels }
+        } catch {
+            Logger.model.error("❌ Failed to get labels for \(modelType.displayName): \(error.localizedDescription)")
+            // By not setting an error message, the UI can gracefully degrade
+            // (autocomplete just won't work)
+        }
     }
     
     func updateModel(to modelType: MLModelType) async {

@@ -18,6 +18,8 @@ import OSLog
 class LiveCameraViewModel: NSObject, ObservableObject {
     @Published var liveResults: [ClassificationResult] = []
     @Published var isProcessing = false
+    @Published var shouldHighlight = false
+    var highlightRules: [String: Double] = [:]
     @Published var isLoadingModel = false
     @Published var lowResPreviewImage: UIImage? = nil
     var showLowResPreview = false
@@ -137,20 +139,29 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     @MainActor
     func loadModel(_ modelType: MLModelType) async {
         isLoadingModel = true
-        
+        liveResults.removeAll()
+
         do {
-            let model = try await modelService.createModel(for: modelType)
-            let request = VNCoreMLRequest(model: model.model) { [weak self] request, error in
+            // 1. Load the MLModel from the service
+            let mlModel = try await modelService.loadCoreMLModel(for: modelType)
+            
+            // 2. Create the VNCoreMLModel wrapper
+            let visionModel = try VNCoreMLModel(for: mlModel)
+            
+            // 3. Create the request with the completion handler
+            let request = VNCoreMLRequest(model: visionModel) { [weak self] request, error in
                 DispatchQueue.main.async {
                     self?.processLiveClassifications(for: request, error: error)
                 }
             }
             request.imageCropAndScaleOption = .centerCrop
-            currentModel = modelType
-            classificationRequest = request
-            liveResults.removeAll()
+            
+            self.classificationRequest = request
+            self.currentModel = modelType
+            
         } catch {
-            // Handle error
+            Logger.model.error("❌ Failed to load model \(modelType.displayName) in LiveCameraViewModel: \(error.localizedDescription)")
+            // Optionally, set an error state for the UI
         }
         
         // Set the input size for the low-res preview
@@ -213,6 +224,23 @@ class LiveCameraViewModel: NSObject, ObservableObject {
             guard observation.confidence > 0.25 else { return nil }
             return ClassificationResult(identifier: observation.identifier, confidence: Double(observation.confidence))
         }
+        
+        // Check for highlight condition
+        var highlight = false
+        for result in self.liveResults {
+            let identifier = result.identifier.lowercased()
+            // Check primary label and potential synonyms/broader categories
+            let keysToCheck = [identifier] + identifier.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+            
+            for key in keysToCheck {
+                if let threshold = highlightRules[key], result.confidence >= threshold {
+                    highlight = true
+                    break
+                }
+            }
+            if highlight { break }
+        }
+        self.shouldHighlight = highlight
     }
 }
 
