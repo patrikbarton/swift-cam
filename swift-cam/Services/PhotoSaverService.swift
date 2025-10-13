@@ -10,7 +10,7 @@ import Photos
 import OSLog
 import CoreLocation
 
-class PhotoSaver: NSObject {
+class PhotoSaverService: NSObject {
     func saveImageData(_ data: Data, location: CLLocation?) {
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
             guard let self = self else { return }

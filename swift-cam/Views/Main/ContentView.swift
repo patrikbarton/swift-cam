@@ -437,7 +437,7 @@ struct CameraTabView: View {
 struct SettingsTabView: View {
     @ObservedObject var viewModel: HomeViewModel
     @ObservedObject var appStateViewModel: AppStateViewModel
-    private let hapticManager = HapticManager.shared
+    private let hapticManager = HapticManagerService.shared
     
     var body: some View {
         NavigationStack {

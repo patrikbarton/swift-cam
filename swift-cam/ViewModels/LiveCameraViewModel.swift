@@ -56,7 +56,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     let session = AVCaptureSession()
     private var photoOutput = AVCapturePhotoOutput()
     private var videoOutput = AVCaptureVideoDataOutput()
-    private let photoSaver = PhotoSaver()
+    private let photoSaver = PhotoSaverService()
     @Published var showSaveConfirmation = false
     
     // Enhanced object tracking properties
@@ -69,7 +69,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     private var classificationRequest: VNCoreMLRequest?
     private let modelService = ModelService.shared
     private let faceBlurService = FaceBlurringService()
-    private let hapticManager = HapticManager.shared
+    private let hapticManager = HapticManagerService.shared
     private let locationManager = CLLocationManager()
     private var currentLocation: CLLocation? = nil
     

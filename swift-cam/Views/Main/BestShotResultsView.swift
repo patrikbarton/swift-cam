@@ -16,7 +16,7 @@ struct BestShotResultsView: View {
     let onDismiss: () -> Void
     
     @State private var selectedImageData: [Data] = []
-    private let photoSaver = PhotoSaver()
+    private let photoSaver = PhotoSaverService()
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

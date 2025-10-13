@@ -9,8 +9,8 @@
 import UIKit
 
 /// A singleton manager for providing haptic feedback.
-class HapticManager {
-    static let shared = HapticManager()
+class HapticManagerService {
+    static let shared = HapticManagerService()
 
     private init() { }
 
