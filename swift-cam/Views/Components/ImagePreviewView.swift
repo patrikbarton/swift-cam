@@ -1,5 +1,5 @@
 //
-//  ModernImagePreviewView.swift
+//  ImagePreviewView.swift
 //  swift-cam
 //
 //  Image preview component with loading state
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ModernImagePreviewView: View {
+struct ImagePreviewView: View {
     let image: UIImage?
     let isAnalyzing: Bool
     var onClear: (() -> Void)? = nil // Optional closure for clearing image
@@ -182,7 +182,7 @@ struct ModernImagePreviewView: View {
 }
 
 #Preview("With Image") {
-    ModernImagePreviewView(
+    ImagePreviewView(
         image: UIImage(systemName: "photo"),
         isAnalyzing: false,
         onClear: { print("Clear tapped") }
@@ -192,7 +192,7 @@ struct ModernImagePreviewView: View {
 }
 
 #Preview("Analyzing") {
-    ModernImagePreviewView(
+    ImagePreviewView(
         image: UIImage(systemName: "photo"),
         isAnalyzing: true,
         onClear: { print("Clear tapped") }
@@ -202,7 +202,7 @@ struct ModernImagePreviewView: View {
 }
 
 #Preview("No Image") {
-    ModernImagePreviewView(
+    ImagePreviewView(
         image: nil,
         isAnalyzing: false,
         onClear: nil

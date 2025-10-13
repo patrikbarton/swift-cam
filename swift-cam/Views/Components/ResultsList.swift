@@ -1,5 +1,5 @@
 //
-//  ModernResultsList.swift
+//  ResultsList.swift
 //  swift-cam
 //
 //  Results list component
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ModernResultsList: View {
+struct ResultsList: View {
     let results: [ClassificationResult]
     
     var body: some View {
@@ -21,14 +21,14 @@ struct ModernResultsList: View {
                 Spacer()
                 
                 if let topResult = results.first {
-                    ModernConfidenceBadge(confidence: topResult.confidence)
+                    ConfidenceBadge(confidence: topResult.confidence)
                 }
             }
             
             // Results list
             VStack(spacing: 10) {
                 ForEach(results.prefix(AppConstants.maxClassificationResults), id: \.identifier) { result in
-                    ModernClassificationRow(result: result)
+                    ClassificationRow(result: result)
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.9)),
                             removal: .opacity.combined(with: .scale(scale: 0.8)).combined(with: .move(edge: .trailing))
@@ -69,7 +69,7 @@ struct ModernResultsList: View {
 }
 
 #Preview {
-    ModernResultsList(results: [
+    ResultsList(results: [
         ClassificationResult(identifier: "Labrador Retriever", confidence: 0.98),
         ClassificationResult(identifier: "Golden Retriever", confidence: 0.92),
         ClassificationResult(identifier: "Beagle", confidence: 0.87)

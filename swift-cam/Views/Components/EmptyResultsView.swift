@@ -1,5 +1,5 @@
 //
-//  ModernEmptyResultsView.swift
+//  EmptyResultsView.swift
 //  swift-cam
 //
 //  Empty state for classification results
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ModernEmptyResultsView: View {
+struct EmptyResultsView: View {
     var body: some View {
         VStack(spacing: 12) {
             ZStack {
@@ -36,7 +36,7 @@ struct ModernEmptyResultsView: View {
 }
 
 #Preview {
-    ModernEmptyResultsView()
+    EmptyResultsView()
         .padding()
         .background(Color(.systemGroupedBackground))
 }

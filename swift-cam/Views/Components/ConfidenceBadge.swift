@@ -1,5 +1,5 @@
 //
-//  ModernConfidenceBadge.swift
+//  ConfidenceBadge.swift
 //  swift-cam
 //
 //  Confidence percentage badge
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ModernConfidenceBadge: View {
+struct ConfidenceBadge: View {
     let confidence: Double
     
     var body: some View {
@@ -67,10 +67,10 @@ struct ModernConfidenceBadge: View {
 
 #Preview {
     VStack(spacing: 10) {
-        ModernConfidenceBadge(confidence: 0.95)
-        ModernConfidenceBadge(confidence: 0.75)
-        ModernConfidenceBadge(confidence: 0.55)
-        ModernConfidenceBadge(confidence: 0.25)
+        ConfidenceBadge(confidence: 0.95)
+        ConfidenceBadge(confidence: 0.75)
+        ConfidenceBadge(confidence: 0.55)
+        ConfidenceBadge(confidence: 0.25)
     }
     .padding()
     .background(Color(.systemGroupedBackground))

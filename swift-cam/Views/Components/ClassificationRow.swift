@@ -1,5 +1,5 @@
 //
-//  ModernClassificationRow.swift
+//  ClassificationRow.swift
 //  swift-cam
 //
 //  Individual classification result row
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ModernClassificationRow: View {
+struct ClassificationRow: View {
     let result: ClassificationResult
     
     var body: some View {
@@ -107,7 +107,7 @@ struct ModernClassificationRow: View {
 }
 
 #Preview {
-    ModernClassificationRow(result: ClassificationResult(identifier: "Golden Retriever", confidence: 0.92))
+    ClassificationRow(result: ClassificationResult(identifier: "Golden Retriever", confidence: 0.92))
         .padding()
         .background(Color(.systemGroupedBackground))
 }

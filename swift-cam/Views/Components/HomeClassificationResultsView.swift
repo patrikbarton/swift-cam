@@ -1,5 +1,5 @@
 //
-//  ModernClassificationResultsView.swift
+//  HomeClassificationResultsView.swift
 //  swift-cam
 //
 //  Container for classification results display
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ModernClassificationResultsView: View {
+struct HomeClassificationResultsView: View {
     let results: [ClassificationResult]
     let isAnalyzing: Bool
     let error: String?
@@ -15,17 +15,17 @@ struct ModernClassificationResultsView: View {
     var body: some View {
         VStack(spacing: 16) {
             if let error = error {
-                ModernErrorView(message: error)
+                ErrorView(message: error)
                     .padding(.horizontal, 24)
             } else if !results.isEmpty {
-                ModernResultsList(results: results)
+                ResultsList(results: results)
                     .padding(.horizontal, 24)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .scale(scale: 0.95)).combined(with: .move(edge: .bottom)),
                         removal: .opacity.combined(with: .scale(scale: 1.05)).combined(with: .move(edge: .top))
                     ))
             } else if !isAnalyzing {
-                ModernEmptyResultsView()
+                EmptyResultsView()
                     .padding(.horizontal, 24)
             }
         }
@@ -33,7 +33,7 @@ struct ModernClassificationResultsView: View {
 }
 
 #Preview("With Results") {
-    ModernClassificationResultsView(
+    HomeClassificationResultsView(
         results: [
             ClassificationResult(identifier: "Labrador Retriever", confidence: 0.98),
             ClassificationResult(identifier: "Golden Retriever", confidence: 0.92),
@@ -47,7 +47,7 @@ struct ModernClassificationResultsView: View {
 }
 
 #Preview("Analyzing") {
-    ModernClassificationResultsView(
+    HomeClassificationResultsView(
         results: [],
         isAnalyzing: true,
         error: nil
@@ -57,7 +57,7 @@ struct ModernClassificationResultsView: View {
 }
 
 #Preview("Error") {
-    ModernClassificationResultsView(
+    HomeClassificationResultsView(
         results: [],
         isAnalyzing: false,
         error: "Failed to load model. Please check the model file."
@@ -67,7 +67,7 @@ struct ModernClassificationResultsView: View {
 }
 
 #Preview("Empty") {
-    ModernClassificationResultsView(
+    HomeClassificationResultsView(
         results: [],
         isAnalyzing: false,
         error: nil

@@ -5,12 +5,14 @@
 //  Main view with Liquid Glass Tab Bar
 //
 
+// TO DO: Modularize
+
 import SwiftUI
 import PhotosUI
 import OSLog
 
 struct ContentView: View {
-    @State private var selectedTab = 0 // Default to Home
+    @State private var selectedTab = 1 // Default to LiveCameraView
     @StateObject private var cameraViewModel = HomeViewModel()
     @StateObject private var appStateViewModel = AppStateViewModel()
     
@@ -106,7 +108,7 @@ struct HomeTabView: View {
                         VStack(spacing: 24) {
                             // Hero Section - Image Preview or Empty State
                             if viewModel.capturedImage != nil || viewModel.isAnalyzing {
-                                ModernImagePreviewView(
+                                ImagePreviewView(
                                     image: viewModel.capturedImage,
                                     isAnalyzing: viewModel.isAnalyzing,
                                     onClear: {
@@ -122,7 +124,7 @@ struct HomeTabView: View {
                             
                             // Classification Results (if available)
                             if !viewModel.classificationResults.isEmpty || viewModel.isAnalyzing {
-                                ModernClassificationResultsView(
+                                HomeClassificationResultsView(
                                     results: viewModel.classificationResults,
                                     isAnalyzing: viewModel.isAnalyzing,
                                     error: viewModel.errorMessage
@@ -538,72 +540,22 @@ struct SettingsTabView: View {
                                 )
 
                                 // Best Shot Duration Slider
-                                VStack(spacing: 12) {
-                                    HStack {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.cyan.opacity(0.2))
-                                                .frame(width: 50, height: 50)
-                                            
-                                            Image(systemName: "timer")
-                                                .font(.system(size: 22))
-                                                .foregroundStyle(Color.cyan)
-                                        }
-                                        
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Best Shot Duration")
-                                                .font(.system(size: 17, weight: .semibold))
-                                                .foregroundStyle(.white)
-                                            
-                                            Text("Duration for the auto-capture sequence")
-                                                .font(.system(size: 13, weight: .medium))
-                                                .foregroundStyle(.white.opacity(0.6))
-                                                .lineLimit(2)
-                                        }
-                                        Spacer()
-                                        Text("\(Int(appStateViewModel.bestShotDuration))s")
-                                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                                            .foregroundStyle(.white)
-                                    }
-                                    Slider(value: $appStateViewModel.bestShotDuration, in: 3...30, step: 1)
-                                        .tint(.cyan)
-                                }
-                                .padding(16)
-                                .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                BestShotDurationSlider(
+                                    icon: "timer",
+                                    title: "Best Shot Duration",
+                                    description: "Duration for the auto-capture sequence",
+                                    duration: $appStateViewModel.bestShotDuration,
+                                    color: .cyan
+                                )
 
                                 NavigationLink(destination: BestShotSettingsView(targetLabel: $appStateViewModel.bestShotTargetLabel, modelLabels: viewModel.modelLabels)) {
-                                    HStack(spacing: 16) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.orange.opacity(0.2))
-                                                .frame(width: 50, height: 50)
-                                            
-                                            Image(systemName: "scope")
-                                                .font(.system(size: 22))
-                                                .foregroundStyle(Color.orange)
-                                        }
-                                        
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Best Shot Target")
-                                                .font(.system(size: 17, weight: .semibold))
-                                                .foregroundStyle(.white)
-                                            
-                                            Text(appStateViewModel.bestShotTargetLabel.isEmpty ? "None" : appStateViewModel.bestShotTargetLabel.capitalized)
-                                                .font(.system(size: 13, weight: .medium))
-                                                .foregroundStyle(.white.opacity(0.6))
-                                                .lineLimit(1)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundStyle(.white.opacity(0.5))
-                                    }
-                                    .padding(16)
-                                    .background(.ultraThinMaterial)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    SettingsNavigationRow(
+                                        icon: "scope",
+                                        iconColor: .orange,
+                                        title: "Best Shot Target",
+                                        subtitle: appStateViewModel.bestShotTargetLabel.isEmpty ? "None" : appStateViewModel.bestShotTargetLabel.capitalized,
+                                        destination: BestShotSettingsView(targetLabel: $appStateViewModel.bestShotTargetLabel, modelLabels: viewModel.modelLabels)
+                                    )
                                 }
                             }
                             .padding(.horizontal, 24)
@@ -618,37 +570,13 @@ struct SettingsTabView: View {
                             
                             VStack(spacing: 12) {
                                 NavigationLink(destination: HighlightSettingsView(highlightRules: $appStateViewModel.highlightRules, modelLabels: viewModel.modelLabels)) {
-                                    HStack(spacing: 16) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.appAccent.opacity(0.2))
-                                                .frame(width: 50, height: 50)
-                                            
-                                            Image(systemName: "sparkles")
-                                                .font(.system(size: 22))
-                                                .foregroundStyle(Color.appAccent)
-                                        }
-                                        
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Highlight Rules")
-                                                .font(.system(size: 17, weight: .semibold))
-                                                .foregroundStyle(.white)
-                                            
-                                            Text("Configure objects to highlight in the camera")
-                                                .font(.system(size: 13, weight: .medium))
-                                                .foregroundStyle(.white.opacity(0.6))
-                                                .lineLimit(2)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundStyle(.white.opacity(0.5))
-                                    }
-                                    .padding(16)
-                                    .background(.ultraThinMaterial)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    SettingsNavigationRow(
+                                        icon: "sparkles",
+                                        iconColor: .appAccent,
+                                        title: "Highlight Rules",
+                                        subtitle: "Configure objects to highlight in the camera",
+                                        destination: HighlightSettingsView(highlightRules: $appStateViewModel.highlightRules, modelLabels: viewModel.modelLabels)
+                                    )
                                 }
                             }
                             .padding(.horizontal, 24)

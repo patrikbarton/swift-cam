@@ -1,5 +1,5 @@
 //
-//  ModernErrorView.swift
+//  ErrorView.swift
 //  swift-cam
 //
 //  Error display component
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ModernErrorView: View {
+struct ErrorView: View {
     let message: String
     
     var body: some View {
@@ -47,7 +47,7 @@ struct ModernErrorView: View {
 }
 
 #Preview {
-    ModernErrorView(message: "This is a sample error message to demonstrate how the view will look.")
+    ErrorView(message: "This is a sample error message to demonstrate how the view will look.")
         .padding()
         .background(Color(.systemGroupedBackground))
 }
