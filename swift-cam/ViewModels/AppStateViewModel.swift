@@ -21,6 +21,24 @@ class AppStateViewModel: ObservableObject {
     @Published var faceBlurringEnabled: Bool = false // Face privacy protection
     @Published var blurStyle: BlurStyle = .gaussian // Face blur style
 
+    @Published var selectedModel: MLModelType = .mobileNet {
+        didSet {
+            saveSelectedModel()
+        }
+    }
+
+    @Published var bestShotTargetLabel: String = "" {
+        didSet {
+            saveBestShotTargetLabel()
+        }
+    }
+
+    @Published var bestShotDuration: Double = 10.0 {
+        didSet {
+            saveBestShotDuration()
+        }
+    }
+
     @Published var highlightRules: [String: Double] = ["keyboard": 0.8] {
         didSet {
             saveHighlightRules()
@@ -28,9 +46,15 @@ class AppStateViewModel: ObservableObject {
     }
 
     private let highlightRulesKey = "highlightRules"
+    private let bestShotDurationKey = "bestShotDuration"
+    private let selectedModelKey = "selectedModel"
+    private let bestShotTargetLabelKey = "bestShotTargetLabel"
 
     init() {
         loadHighlightRules()
+        loadBestShotDuration()
+        loadSelectedModel()
+        loadBestShotTargetLabel()
         
         Task {
             if AppConstants.preloadModels {
@@ -39,6 +63,36 @@ class AppStateViewModel: ObservableObject {
                 self.isLoading = false
             }
         }
+    }
+
+    private func loadBestShotTargetLabel() {
+        self.bestShotTargetLabel = UserDefaults.standard.string(forKey: bestShotTargetLabelKey) ?? ""
+    }
+
+    private func saveBestShotTargetLabel() {
+        UserDefaults.standard.set(bestShotTargetLabel, forKey: bestShotTargetLabelKey)
+    }
+
+    private func loadSelectedModel() {
+        if let modelRawValue = UserDefaults.standard.string(forKey: selectedModelKey) {
+            if let model = MLModelType(rawValue: modelRawValue) {
+                self.selectedModel = model
+            }
+        }
+    }
+
+    private func saveSelectedModel() {
+        UserDefaults.standard.set(selectedModel.rawValue, forKey: selectedModelKey)
+    }
+
+    private func loadBestShotDuration() {
+        if UserDefaults.standard.object(forKey: bestShotDurationKey) != nil {
+            self.bestShotDuration = UserDefaults.standard.double(forKey: bestShotDurationKey)
+        }
+    }
+
+    private func saveBestShotDuration() {
+        UserDefaults.standard.set(bestShotDuration, forKey: bestShotDurationKey)
     }
 
     private func loadHighlightRules() {

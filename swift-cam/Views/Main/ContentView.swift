@@ -13,26 +13,25 @@ struct ContentView: View {
     @State private var selectedTab = 0 // Default to Home
     @StateObject private var cameraViewModel = CameraViewModel()
     @StateObject private var appStateViewModel = AppStateViewModel()
-    @State private var selectedModel: MLModelType = .mobileNet
     
     var body: some View {
         TabView(selection: $selectedTab) {
             // Left Tab - Home (Photo Library & Results)
-            HomeTabView(viewModel: cameraViewModel, selectedModel: $selectedModel, appStateViewModel: appStateViewModel)
+            HomeTabView(viewModel: cameraViewModel, appStateViewModel: appStateViewModel)
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
                 .tag(0)
             
             // Middle Tab - Camera (Auto-open Live Camera)
-            CameraTabView(viewModel: cameraViewModel, selectedModel: selectedModel, selectedTab: $selectedTab, appStateViewModel: appStateViewModel)
+            CameraTabView(viewModel: cameraViewModel, selectedTab: $selectedTab, appStateViewModel: appStateViewModel)
                 .tabItem {
                     Label("Camera", systemImage: "camera.fill")
                 }
                 .tag(1)
             
             // Right Tab - Settings (with Model Selector)
-            SettingsTabView(viewModel: cameraViewModel, selectedModel: $selectedModel, appStateViewModel: appStateViewModel)
+            SettingsTabView(viewModel: cameraViewModel, appStateViewModel: appStateViewModel)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
@@ -46,7 +45,6 @@ struct ContentView: View {
 // MARK: - Home Tab View (Photo Library & Results)
 struct HomeTabView: View {
     @ObservedObject var viewModel: CameraViewModel
-    @Binding var selectedModel: MLModelType
     @ObservedObject var appStateViewModel: AppStateViewModel
     @State private var selectedImage: PhotosPickerItem? = nil
     
@@ -97,7 +95,7 @@ struct HomeTabView: View {
                             
                             // Modern Status Badge
                             HStack {
-                                StatusTextView(viewModel: viewModel, selectedModel: selectedModel)
+                                StatusTextView(viewModel: viewModel, selectedModel: appStateViewModel.selectedModel)
                                 Spacer()
                             }
                             .padding(.horizontal, 24)
@@ -416,7 +414,6 @@ struct FeatureCard: View {
 // MARK: - Camera Tab View (Auto-open Live Camera)
 struct CameraTabView: View {
     @ObservedObject var viewModel: CameraViewModel
-    let selectedModel: MLModelType
     @Binding var selectedTab: Int
     @ObservedObject var appStateViewModel: AppStateViewModel
     @StateObject private var liveCameraManager = LiveCameraViewModel()
@@ -425,7 +422,7 @@ struct CameraTabView: View {
         // Camera directly embedded in tab - Tab Bar stays visible!
         LiveCameraView(
             cameraManager: viewModel, 
-            selectedModel: selectedModel, 
+            selectedModel: appStateViewModel.selectedModel, 
             appStateViewModel: appStateViewModel, // Pass ViewModel instead of value
             liveCameraManager: liveCameraManager,
             onCustomDismiss: {
@@ -440,7 +437,6 @@ struct CameraTabView: View {
 // MARK: - Settings Tab View
 struct SettingsTabView: View {
     @ObservedObject var viewModel: CameraViewModel
-    @Binding var selectedModel: MLModelType
     @ObservedObject var appStateViewModel: AppStateViewModel
     
     var body: some View {
@@ -490,10 +486,10 @@ struct SettingsTabView: View {
                                 ForEach(MLModelType.allCases) { model in
                                     ModelSettingRow(
                                         model: model,
-                                        isSelected: selectedModel == model,
+                                        isSelected: appStateViewModel.selectedModel == model,
                                         viewModel: viewModel
                                     ) {
-                                        selectedModel = model
+                                        appStateViewModel.selectedModel = model
                                         Task {
                                             await viewModel.updateModel(to: model)
                                         }
@@ -531,6 +527,75 @@ struct SettingsTabView: View {
                                     isOn: $appStateViewModel.faceBlurringEnabled,
                                     color: .purple
                                 )
+
+                                // Best Shot Duration Slider
+                                VStack(spacing: 12) {
+                                    HStack {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.cyan.opacity(0.2))
+                                                .frame(width: 50, height: 50)
+                                            
+                                            Image(systemName: "timer")
+                                                .font(.system(size: 22))
+                                                .foregroundStyle(Color.cyan)
+                                        }
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Best Shot Duration")
+                                                .font(.system(size: 17, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                            
+                                            Text("Duration for the auto-capture sequence")
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundStyle(.white.opacity(0.6))
+                                                .lineLimit(2)
+                                        }
+                                        Spacer()
+                                        Text("\(Int(appStateViewModel.bestShotDuration))s")
+                                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                                            .foregroundStyle(.white)
+                                    }
+                                    Slider(value: $appStateViewModel.bestShotDuration, in: 3...30, step: 1)
+                                        .tint(.cyan)
+                                }
+                                .padding(16)
+                                .background(.ultraThinMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                                NavigationLink(destination: BestShotSettingsView(targetLabel: $appStateViewModel.bestShotTargetLabel, modelLabels: viewModel.modelLabels)) {
+                                    HStack(spacing: 16) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.orange.opacity(0.2))
+                                                .frame(width: 50, height: 50)
+                                            
+                                            Image(systemName: "scope")
+                                                .font(.system(size: 22))
+                                                .foregroundStyle(Color.orange)
+                                        }
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Best Shot Target")
+                                                .font(.system(size: 17, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                            
+                                            Text(appStateViewModel.bestShotTargetLabel.isEmpty ? "None" : appStateViewModel.bestShotTargetLabel.capitalized)
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundStyle(.white.opacity(0.6))
+                                                .lineLimit(1)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundStyle(.white.opacity(0.5))
+                                    }
+                                    .padding(16)
+                                    .background(.ultraThinMaterial)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                }
                             }
                             .padding(.horizontal, 24)
                         }

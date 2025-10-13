@@ -271,10 +271,20 @@ struct HighlightRuleRow: View {
 }
 
 #Preview {
-    @State var rules: [String: Double] = ["cat": 0.8, "dog": 0.7]
-    let labels = ["cat", "dog", "bird", "car", "bicycle", "boat"]
-    
-    return NavigationStack {
-        HighlightSettingsView(highlightRules: $rules, modelLabels: labels)
+    // 1. Create a simple container View to hold the state.
+    //    This is a common and recommended pattern for previews.
+    struct HighlightSettingsPreviewWrapper: View {
+        // 2. The @State variable now lives inside a proper View struct.
+        @State var rules: [String: Double] = ["cat": 0.8, "dog": 0.7]
+        let labels = ["cat", "dog", "bird", "car", "bicycle", "boat"]
+        
+        var body: some View {
+            NavigationStack {
+                HighlightSettingsView(highlightRules: $rules, modelLabels: labels)
+            }
+        }
     }
+    
+    // 3. Return an instance of the new wrapper view.
+    return HighlightSettingsPreviewWrapper()
 }

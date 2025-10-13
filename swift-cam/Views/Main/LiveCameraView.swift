@@ -16,6 +16,7 @@ struct LiveCameraView: View {
     let onCustomDismiss: (() -> Void)? // Optional custom dismiss for embedded mode
 
     @State private var showLowResPreview = false
+    @State private var showBestShotResults = false
 
     init(cameraManager: CameraViewModel, selectedModel: MLModelType, appStateViewModel: AppStateViewModel, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel(), onCustomDismiss: (() -> Void)? = nil) {
         self.cameraManager = cameraManager
@@ -43,185 +44,22 @@ struct LiveCameraView: View {
             Color.black.ignoresSafeArea()
 
             if fullScreenCamera {
-                // --- FULL SCREEN CAMERA LAYOUT ---
-                ZStack {
-                    // Camera Preview Layer (Full Screen)
-                    CameraPreviewView(session: liveCameraManager.session)
-                        .border(liveCameraManager.shouldHighlight ? Color.green : Color.clear, width: 5)
-                        .ignoresSafeArea()
-                    
-                    // Low-resolution Overlay (Debug Mode)
-                    if showLowResPreview, let image = liveCameraManager.lowResPreviewImage {
-                        GeometryReader { geometry in
-                            Image(uiImage: image)
-                                .resizable()
-                                .interpolation(.none) // Makes it pixelated
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                                .clipped()
-                                .transition(.opacity)
-                        }
-                        .ignoresSafeArea()
-                    }
-                    
-                    // UI Overlay Layer
-                    VStack {
-                        Spacer()
-                        Spacer() // Extra spacer to push content down
-                        
-                        // Results Overlay (positioned lower, not blocking screen)
-                        VStack(spacing: 0) {
-                            LiveClassificationResultsView(
-                                results: liveCameraManager.liveResults,
-                                model: selectedModel
-                            )
-                            .frame(height: 180)
-                            .padding(.horizontal)
-                            .padding(.bottom, 80) // Lower positioning - more visible screen
-                            
-                            // Bottom Controls - Centered Capture Button
-                            ZStack {
-                                // Side Controls
-                                HStack {
-                                    // Left Side
-                                    ZoomControlView(manager: liveCameraManager)
-                                        .frame(width: 100, alignment: .leading)
-                                    
-                                    Spacer()
-                                    
-                                    // Right Side
-                                    HStack(spacing: 12) {
-                                        Toggle(isOn: $showLowResPreview) {
-                                            Image(systemName: "eye.square")
-                                                .font(.system(size: 20, weight: .medium))
-                                                .foregroundColor(showLowResPreview ? .yellow : .white)
-                                        }
-                                        .toggleStyle(.button)
-                                        .clipShape(Circle())
-                                        .tint(Color.black.opacity(0.5))
-                                        .onChange(of: showLowResPreview) { _, newValue in
-                                            liveCameraManager.showLowResPreview = newValue
-                                        }
-                                        
-                                        Button(action: { liveCameraManager.switchCamera() }) {
-                                            Image(systemName: "arrow.triangle.2.circlepath.camera")
-                                                .font(.system(size: 20, weight: .medium))
-                                                .foregroundColor(.white)
-                                                .padding(12)
-                                                .background(Color.black.opacity(0.5))
-                                                .clipShape(Circle())
-                                        }
-                                    }
-                                    .frame(width: 100, alignment: .trailing)
-                                }
-                                .padding(.horizontal)
-                                
-                                // Centered Capture Button
-                                CaptureButton {
-                                    liveCameraManager.capturePhoto { image in
-                                        if let image = image {
-                                            Task { await cameraManager.classifyImage(image, applyFaceBlur: appStateViewModel.faceBlurringEnabled, blurStyle: appStateViewModel.blurStyle) }
-                                        }
-                                        handleDismiss()
-                                    }
-                                }
-                            }
-                            .padding(.bottom, 80)
-                        }
-                        .background(
-                            LinearGradient(
-                                colors: [.clear, .black.opacity(0.7)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                    }
-                }
+                fullScreenView
             } else {
-                // --- SQUARE CAMERA LAYOUT (Original) ---
-                VStack(spacing: 0) {
-                    // --- 1. CAMERA BLOCK (Square 1:1) ---
-                    GeometryReader { geometry in
-                        ZStack {
-                            // Camera Preview Layer with .resizeAspectFill
-                            CameraPreviewView(session: liveCameraManager.session)
-                                .border(liveCameraManager.shouldHighlight ? Color.green : Color.clear, width: 5)
-                                .clipShape(Rectangle())
-
-                            // Low-resolution Overlay (Debug Mode)
-                            if showLowResPreview, let image = liveCameraManager.lowResPreviewImage {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .interpolation(.none) // Makes it pixelated
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: geometry.size.width, height: geometry.size.height)
-                                    .clipped()
-                                    .transition(.opacity)
-                            }
-
-                            // UI Overlay Layer
-                            VStack {
-                                Spacer()
-                                Spacer() // Extra spacer to push content down
-
-                                HStack {
-                                    ZoomControlView(manager: liveCameraManager)
-                                    Spacer()
-
-                                    // Toggle for low-resolution preview
-                                    Toggle(isOn: $showLowResPreview) {
-                                        Image(systemName: "eye.square")
-                                            .font(.system(size: 20, weight: .medium))
-                                            .foregroundColor(showLowResPreview ? .yellow : .white)
-                                    }
-                                    .toggleStyle(.button)
-                                    .clipShape(Circle())
-                                    .tint(Color.black.opacity(0.4))
-                                    .onChange(of: showLowResPreview) { _, newValue in
-                                        liveCameraManager.showLowResPreview = newValue
-                                    }
-
-                                    Button(action: { liveCameraManager.switchCamera() }) {
-                                        Image(systemName: "arrow.triangle.2.circlepath.camera")
-                                            .font(.system(size: 20, weight: .medium))
-                                            .foregroundColor(.white)
-                                            .padding(12)
-                                            .background(Color.black.opacity(0.4))
-                                            .clipShape(Circle())
-                                    }
-                                }
-                                .padding()
-                            }
-                        }
-                    }
-                    .aspectRatio(1.0, contentMode: .fit)
-
-                    // --- 2. RESULTS BLOCK (positioned lower) ---
-                    LiveClassificationResultsView(
-                        results: liveCameraManager.liveResults,
-                        model: selectedModel
-                    )
-                    .frame(height: 180) // Fixed height for stability
-                    .padding()
-                    .padding(.bottom, 40) // Lower positioning - more visible screen
-
-                    // --- 3. CAPTURE BUTTON ---
-                    Spacer()
-
-                    HStack {
-                        Spacer()
-                        CaptureButton {
-                            liveCameraManager.capturePhoto { image in
-                                if let image = image {
-                                    Task { await cameraManager.classifyImage(image, applyFaceBlur: appStateViewModel.faceBlurringEnabled, blurStyle: appStateViewModel.blurStyle) }
-                                }
-                                handleDismiss()
-                            }
-                        }
-                        Spacer()
-                    }
-                    .padding(.bottom)
+                squareView
+            }
+        }
+        .sheet(isPresented: $showBestShotResults) {
+            if !liveCameraManager.topCandidates.isEmpty {
+                BestShotResultsView(candidates: liveCameraManager.topCandidates) {
+                    liveCameraManager.topCandidates.removeAll()
+                    showBestShotResults = false
                 }
+            }
+        }
+        .onChange(of: liveCameraManager.topCandidates) { _, newCandidates in
+            if !newCandidates.isEmpty {
+                showBestShotResults = true
             }
         }
         .onAppear {
@@ -229,6 +67,7 @@ struct LiveCameraView: View {
             liveCameraManager.faceBlurringEnabled = appStateViewModel.faceBlurringEnabled
             liveCameraManager.blurStyle = appStateViewModel.blurStyle
             liveCameraManager.highlightRules = appStateViewModel.highlightRules // Set initial rules
+            liveCameraManager.bestShotTargetLabel = appStateViewModel.bestShotTargetLabel // Set initial target
             liveCameraManager.startSession()
         }
         .onDisappear {
@@ -243,6 +82,167 @@ struct LiveCameraView: View {
         .onChange(of: appStateViewModel.highlightRules) { _, newRules in
             liveCameraManager.highlightRules = newRules
         }
+        .onChange(of: appStateViewModel.bestShotTargetLabel) { _, newLabel in
+            liveCameraManager.bestShotTargetLabel = newLabel
+        }
+    }
+
+    // MARK: - Full Screen View
+    @ViewBuilder
+    private var fullScreenView: some View {
+        ZStack {
+            // Camera Preview Layer
+            CameraPreviewView(session: liveCameraManager.session)
+                .border(liveCameraManager.shouldHighlight ? Color.green : Color.clear, width: 5)
+                .ignoresSafeArea()
+
+            // Overlays
+            countdownOverlay
+            lowResPreviewOverlay
+
+            // UI Controls
+            VStack {
+                Spacer()
+                LiveClassificationResultsView(results: liveCameraManager.liveResults, model: selectedModel)
+                    .frame(height: 180)
+                    .padding(.horizontal)
+                
+                bottomControls
+                    .padding(.bottom, 40)
+            }
+            .padding(.bottom, 40)
+            .background(bottomGradient)
+        }
+    }
+
+    // MARK: - Square View
+    @ViewBuilder
+    private var squareView: some View {
+        VStack(spacing: 0) {
+            GeometryReader { geometry in
+                ZStack {
+                    CameraPreviewView(session: liveCameraManager.session)
+                        .border(liveCameraManager.shouldHighlight ? Color.green : Color.clear, width: 5)
+                        .clipShape(Rectangle())
+
+                    countdownOverlay
+                    lowResPreviewOverlay
+                    
+                    VStack {
+                        Spacer()
+                        squareViewControls
+                    }
+                }
+            }
+            .aspectRatio(1.0, contentMode: .fit)
+
+            LiveClassificationResultsView(results: liveCameraManager.liveResults, model: selectedModel)
+                .frame(height: 180)
+                .padding()
+
+            Spacer()
+            
+            bottomControls
+                .padding(.bottom, 20)
+        }
+    }
+
+    // MARK: - Shared UI Components
+    @ViewBuilder
+    private var bottomControls: some View {
+        HStack(spacing: 60) {
+            // Best Shot Button
+            Button(action: { 
+                liveCameraManager.startBestShotSequence(duration: appStateViewModel.bestShotDuration)
+            }) {
+                Image(systemName: "timer")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundColor(.white)
+            }
+            .padding(20)
+            .background(Color.white.opacity(0.2))
+            .clipShape(Circle())
+
+            // Main Capture Button
+            CaptureButton {
+                liveCameraManager.capturePhoto { image in
+                    if let image = image {
+                        Task { await cameraManager.classifyImage(image, applyFaceBlur: appStateViewModel.faceBlurringEnabled, blurStyle: appStateViewModel.blurStyle) }
+                    }
+                    handleDismiss()
+                }
+            }
+
+            // Switch Camera Button (or other right-side control)
+            Button(action: { liveCameraManager.switchCamera() }) {
+                Image(systemName: "arrow.triangle.2.circlepath.camera")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundColor(.white)
+            }
+            .padding(20)
+            .background(Color.white.opacity(0.2))
+            .clipShape(Circle())
+        }
+    }
+
+    @ViewBuilder
+    private var squareViewControls: some View {
+        HStack {
+            ZoomControlView(manager: liveCameraManager)
+            Spacer()
+            Toggle(isOn: $showLowResPreview) {
+                Image(systemName: "eye.square")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(showLowResPreview ? .yellow : .white)
+            }
+            .toggleStyle(.button)
+            .clipShape(Circle())
+            .tint(Color.black.opacity(0.4))
+            .onChange(of: showLowResPreview) { _, newValue in
+                liveCameraManager.showLowResPreview = newValue
+            }
+        }
+        .padding()
+    }
+
+    @ViewBuilder
+    private var countdownOverlay: some View {
+        if liveCameraManager.isBestShotSequenceActive {
+            ZStack {
+                Circle()
+                    .fill(Color.black.opacity(0.6))
+                    .frame(width: 120, height: 120)
+                Text("\(Int(liveCameraManager.bestShotCountdown))")
+                    .font(.system(size: 60, weight: .bold, design: .monospaced))
+                    .foregroundColor(.white)
+            }
+            .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private var lowResPreviewOverlay: some View {
+        if showLowResPreview, let image = liveCameraManager.lowResPreviewImage {
+            GeometryReader { geometry in
+                Image(uiImage: image)
+                    .resizable()
+                    .interpolation(.none)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
+                    .transition(.opacity)
+            }
+            .ignoresSafeArea()
+        }
+    }
+
+    private var bottomGradient: some View {
+        LinearGradient(
+            colors: [.clear, .black.opacity(0.7)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
     }
 }
 

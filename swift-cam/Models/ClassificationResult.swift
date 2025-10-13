@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ClassificationResult {
+struct ClassificationResult: Equatable {
     let identifier: String
     let confidence: Double
     let detectedAt: Date

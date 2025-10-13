@@ -27,6 +27,9 @@ extension Logger {
     
     /// Camera setup logging
     static let cameraSetup = Logger(subsystem: subsystem, category: "CameraSetup")
+    
+    /// BestShot logging
+    static let bestShot = Logger(subsystem: subsystem, category: "BestShot")
 }
 
 // MARK: - Conditional Logging Helpers

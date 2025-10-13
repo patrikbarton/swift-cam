@@ -25,6 +25,24 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     var showLowResPreview = false
     var faceBlurringEnabled = false
     var blurStyle: BlurStyle = .gaussian
+    var bestShotTargetLabel: String = ""
+    
+    // Best Shot Properties
+    @Published var isBestShotSequenceActive = false
+    @Published var bestShotCountdown: Double = 0
+    @Published var topCandidates: [CaptureCandidate] = []
+    private var bestShotCandidates: [CaptureCandidate] = []
+    private var sequenceTimer: Timer?
+
+    struct CaptureCandidate: Equatable, Identifiable {
+        let id = UUID()
+        let image: UIImage
+        let result: ClassificationResult
+        
+        static func == (lhs: LiveCameraViewModel.CaptureCandidate, rhs: LiveCameraViewModel.CaptureCandidate) -> Bool {
+            lhs.id == rhs.id
+        }
+    }
     
     @Published var availableBackCameras: [AVCaptureDevice] = []
     @Published var activeCamera: AVCaptureDevice?
@@ -181,6 +199,55 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         Task { @MainActor in
             await loadModel(modelType)
         }
+    }
+
+    // MARK: - Best Shot Sequence
+    
+    func startBestShotSequence(duration: Double) {
+        guard !isBestShotSequenceActive else { return }
+        
+        Logger.bestShot.info("Starting Best Shot sequence for \(duration)s")
+        isBestShotSequenceActive = true
+        bestShotCountdown = duration
+        bestShotCandidates.removeAll()
+        
+        // Invalidate any existing timer
+        sequenceTimer?.invalidate()
+        
+        // Start a new timer
+        sequenceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                self.bestShotCountdown -= 1
+                if self.bestShotCountdown <= 0 {
+                    self.stopBestShotSequence()
+                }
+            }
+        }
+    }
+    
+    private func stopBestShotSequence() {
+        guard isBestShotSequenceActive else { return }
+        
+        Logger.bestShot.info("Finished Best Shot sequence.")
+        isBestShotSequenceActive = false
+        sequenceTimer?.invalidate()
+        sequenceTimer = nil
+        
+        // Process results
+        processBestShotCandidates()
+    }
+    
+    private func processBestShotCandidates() {
+        // Sort candidates by confidence and take the top 3
+        let top = Array(bestShotCandidates.sorted { $0.result.confidence > $1.result.confidence }.prefix(3))
+        
+        Logger.bestShot.info("Found \(self.bestShotCandidates.count) candidates. Presenting top \(top.count).")
+        
+        // Publish the top candidates to the UI
+        self.topCandidates = top
+        self.bestShotCandidates.removeAll()
     }
     
     func startSession() {
@@ -353,5 +420,18 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
             // Silently handle errors to avoid UI disruption
         }
         
+        // --- Best Shot Candidate Capture ---
+        if isBestShotSequenceActive, !bestShotTargetLabel.isEmpty {
+            // Check if the top result matches the specific target label
+            if let bestResult = liveResults.first(where: { $0.identifier.lowercased().contains(bestShotTargetLabel.lowercased()) }),
+               bestResult.confidence > 0.8 {
+                
+                if let image = UIImage(sampleBuffer: sampleBuffer, orientation: .right) {
+                    let candidate = CaptureCandidate(image: image, result: bestResult)
+                    bestShotCandidates.append(candidate)
+                    Logger.bestShot.debug("Adding best shot candidate: \(bestResult.identifier) @ \(bestResult.confidence)")
+                }
+            }
+        }
     }
 }
