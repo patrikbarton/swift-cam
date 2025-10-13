@@ -2,22 +2,84 @@
 //  LiveCameraView.swift
 //  swift-cam
 //
-//  Live camera view with real-time classification (Square Camera Design)
+//  Live camera view with real-time ML classification
 //
 
 import SwiftUI
 import OSLog
 
+/// Live camera view with real-time object detection
+///
+/// This view provides the core camera experience with multiple intelligent features:
+///
+/// **Features:**
+/// - Real-time ML classification (throttled to 0.5s intervals)
+/// - Three capture modes:
+///   1. Manual: Traditional photo capture
+///   2. Assisted: Only allow capture when target object detected
+///   3. Best Shot: Automatic capture over time period
+/// - Object highlighting with custom rules
+/// - Face privacy protection with blur options
+/// - Multi-camera support (wide, ultra-wide, telephoto)
+/// - Zoom controls
+/// - Low-res preview mode for debugging
+///
+/// **Camera Modes:**
+/// - Square mode: 1:1 aspect ratio with classification results below
+/// - Full screen mode: Fills entire screen with overlay results
+///
+/// **UI Layout:**
+/// ```
+/// ┌─────────────────────┐
+/// │  Camera Preview     │
+/// │  (with highlighting)│
+/// │                     │
+/// ├─────────────────────┤
+/// │ Classification      │
+/// │ Results List        │
+/// ├─────────────────────┤
+/// │ [Best] [●] [Switch] │ ← Controls
+/// └─────────────────────┘
+/// ```
+///
+/// **Performance:**
+/// - 60fps camera feed
+/// - ML inference throttled to 2x per second
+/// - Background processing queue for classification
+/// - Main thread updates for UI
 struct LiveCameraView: View {
+    
+    // MARK: - Dependencies
+    
+    /// Selected ML model for classification
     let selectedModel: MLModelType
-    @ObservedObject var appStateViewModel: AppStateViewModel // Observe changes instead of copying value
+    
+    /// Global app state (settings, preferences)
+    @ObservedObject var appStateViewModel: AppStateViewModel
+    
+    /// Environment dismiss action
     @Environment(\.dismiss) private var dismiss
+    
+    /// Live camera coordinator ViewModel
     @StateObject private var liveCameraManager: LiveCameraViewModel
-    let onCustomDismiss: (() -> Void)? // Optional custom dismiss for embedded mode
+    
+    /// Optional custom dismiss handler for embedded mode
+    let onCustomDismiss: (() -> Void)?
 
+    // MARK: - Local State
+    
     @State private var showLowResPreview = false
     @State private var showBestShotResults = false
 
+    // MARK: - Initialization
+    
+    /// Initialize live camera view
+    ///
+    /// - Parameters:
+    ///   - selectedModel: ML model to use for classification
+    ///   - appStateViewModel: Global app state
+    ///   - liveCameraManager: Camera manager (can inject for testing)
+    ///   - onCustomDismiss: Optional custom dismiss handler
     init(selectedModel: MLModelType, appStateViewModel: AppStateViewModel, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel(), onCustomDismiss: (() -> Void)? = nil) {
         self.selectedModel = selectedModel
         self.appStateViewModel = appStateViewModel
@@ -25,11 +87,16 @@ struct LiveCameraView: View {
         self.onCustomDismiss = onCustomDismiss
     }
     
-    // Computed property for easy access
+    // MARK: - Computed Properties
+    
+    /// Whether to use full screen or square camera mode
     private var fullScreenCamera: Bool {
         appStateViewModel.fullScreenCamera
     }
     
+    // MARK: - Actions
+    
+    /// Handle view dismissal (custom or environment)
     private func handleDismiss() {
         if let onCustomDismiss = onCustomDismiss {
             onCustomDismiss()
@@ -37,6 +104,8 @@ struct LiveCameraView: View {
             dismiss()
         }
     }
+
+    // MARK: - Body
 
     var body: some View {
         ZStack {

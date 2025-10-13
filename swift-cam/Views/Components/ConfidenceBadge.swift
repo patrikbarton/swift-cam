@@ -2,12 +2,30 @@
 //  ConfidenceBadge.swift
 //  swift-cam
 //
-//  Confidence percentage badge
+//  Confidence percentage badge with color-coded indicator
 //
 
 import SwiftUI
 
+/// Confidence percentage badge with pulsing indicator dot
+///
+/// Displays confidence as a percentage with color-coded visual feedback:
+/// - **Green**: High confidence (50-100%)
+/// - **Yellow**: Medium confidence (35-50%)
+/// - **Orange**: Low confidence (20-35%)
+/// - **Red**: Very low confidence (0-20%)
+///
+/// **Visual Elements:**
+/// - Left: Pulsing colored dot with glow
+/// - Right: Percentage text (e.g., "95%")
+///
+/// **Usage:**
+/// ```swift
+/// ConfidenceBadge(confidence: 0.95) // Shows "95%" with green dot
+/// ```
 struct ConfidenceBadge: View {
+    
+    /// Confidence value (0.0 to 1.0)
     let confidence: Double
     
     var body: some View {

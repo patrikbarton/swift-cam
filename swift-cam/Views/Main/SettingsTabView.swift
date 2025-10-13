@@ -2,16 +2,62 @@
 //  SettingsTabView.swift
 //  swift-cam
 //
-//  Settings tab with model selection, camera configuration, and app info
+//  Settings tab with comprehensive app configuration
 //
 
 import SwiftUI
 
 /// Settings tab featuring ML model selection, camera settings, and system info
+///
+/// Provides a comprehensive settings interface organized into sections:
+///
+/// **Sections:**
+/// 1. ML Model Selection
+///    - Choose between MobileNet, ResNet, FastViT
+///    - Shows model descriptions and status
+///    - Instant switching (models are cached)
+///
+/// 2. Camera Settings
+///    - Full screen camera toggle
+///    - Assisted capture mode
+///    - Face privacy protection
+///    - Best Shot duration slider
+///    - Best Shot target label
+///
+/// 3. Highlight Settings
+///    - Configure which objects to highlight
+///    - Set confidence thresholds per object
+///
+/// 4. Privacy Settings (conditional)
+///    - Blur style selection (Gaussian, Pixelated, Black Box)
+///    - Only shown when face blurring is enabled
+///
+/// 5. System Info
+///    - Current compute unit (Neural Engine, GPU, CPU)
+///    - Verification status
+///
+/// 6. About
+///    - App version and description
+///
+/// **UI Design:**
+/// Uses "Liquid Glass" design language with:
+/// - Gradient background
+/// - Ultra-thin material cards
+/// - Consistent spacing and padding
+/// - Haptic feedback on interactions
+///
+/// **State Management:**
+/// All settings are persisted via `AppStateViewModel` which
+/// automatically saves to UserDefaults on change.
 struct SettingsTabView: View {
+    
+    // MARK: - Dependencies
+    
     @ObservedObject var viewModel: HomeViewModel
     @ObservedObject var appStateViewModel: AppStateViewModel
     private let hapticManager = HapticManagerService.shared
+    
+    // MARK: - Body
     
     var body: some View {
         NavigationStack {

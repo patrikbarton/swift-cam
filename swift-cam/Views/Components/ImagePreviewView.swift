@@ -2,15 +2,42 @@
 //  ImagePreviewView.swift
 //  swift-cam
 //
-//  Image preview component with loading state
+//  Image preview component with loading state and clear action
 //
 
 import SwiftUI
 
+/// Image preview with glass morphism design and loading overlay
+///
+/// Displays a selected or captured image with:
+/// - Glass card background
+/// - Loading spinner overlay (when analyzing)
+/// - Clear button (X) in top-right corner
+/// - Rounded corners and shadow
+///
+/// **States:**
+/// - **Image + Not Analyzing**: Show image with clear button
+/// - **Image + Analyzing**: Show image with loading overlay
+/// - **No Image**: Show placeholder message
+///
+/// **Usage:**
+/// ```swift
+/// ImagePreviewView(
+///     image: capturedImage,
+///     isAnalyzing: viewModel.isAnalyzing,
+///     onClear: { viewModel.clearImage() }
+/// )
+/// ```
 struct ImagePreviewView: View {
+    
+    /// Image to display (nil for placeholder)
     let image: UIImage?
+    
+    /// Whether analysis is in progress
     let isAnalyzing: Bool
-    var onClear: (() -> Void)? = nil // Optional closure for clearing image
+    
+    /// Optional action when clear button tapped
+    var onClear: (() -> Void)? = nil
     
     var body: some View {
         ZStack {

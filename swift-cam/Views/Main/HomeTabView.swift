@@ -2,7 +2,7 @@
 //  HomeTabView.swift
 //  swift-cam
 //
-//  Home tab view with photo library picker and classification results
+//  Home tab with photo library selection and classification
 //
 
 import SwiftUI
@@ -10,11 +10,48 @@ import PhotosUI
 import OSLog
 
 /// Home tab featuring photo library selection and ML classification results
+///
+/// This view provides the static image classification experience:
+///
+/// **Features:**
+/// - Photo library image selection via PhotosPicker
+/// - ML classification with selected model
+/// - Face privacy protection (optional blur)
+/// - Confidence-based result display
+/// - Error handling with user-friendly alerts
+///
+/// **UI Flow:**
+/// 1. User selects image from photo library
+/// 2. Image loads and displays with loading indicator
+/// 3. Classification runs in background
+/// 4. Results appear below image, sorted by confidence
+/// 5. Option to clear and select new image
+///
+/// **UI States:**
+/// - Empty: Premium animated empty state
+/// - Loading: Progress indicator with model name
+/// - Results: Image preview + classification list
+/// - Error: Alert with localized error message
+///
+/// **Integration:**
+/// - Uses `HomeViewModel` for classification logic
+/// - Accesses `AppStateViewModel` for global settings
+/// - Respects face blurring preference
+/// - Shows current model and compute unit
 struct HomeTabView: View {
+    
+    // MARK: - Dependencies
+    
     @ObservedObject var viewModel: HomeViewModel
     @ObservedObject var appStateViewModel: AppStateViewModel
+    
+    // MARK: - Local State
+    
     @State private var selectedImage: PhotosPickerItem? = nil
     
+    // MARK: - Computed Properties
+    
+    /// Binding for error alert presentation
     private var showErrorAlert: Binding<Bool> {
         Binding(
             get: { viewModel.errorMessage != nil },
@@ -192,6 +229,14 @@ struct HomeTabView: View {
     
     // MARK: - Private Methods
     
+    // MARK: - Private Methods
+    
+    /// Handle image selection from PhotosPicker
+    ///
+    /// Loads image data, validates format, and triggers classification
+    /// with optional face blurring based on user settings.
+    ///
+    /// - Parameter newItem: Selected photo picker item
     private func handleImageSelection(_ newItem: PhotosPickerItem?) async {
         guard let newItem = newItem else { return }
         

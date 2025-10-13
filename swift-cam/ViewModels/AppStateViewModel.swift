@@ -2,13 +2,6 @@
 //  AppStateViewModel.swift
 //  swift-cam
 //
-//  ViewModel for app state and splash screen
-//
-
-//
-//  AppStateViewModel.swift
-//  swift-cam
-//
 //  ViewModel for app initialization and user settings coordination
 //
 

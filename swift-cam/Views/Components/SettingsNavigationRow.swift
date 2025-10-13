@@ -2,16 +2,52 @@
 //  SettingsNavigationRow.swift
 //  swift-cam
 //
-//  Generic navigation row for settings
+//  Generic navigation row component for settings screens
 //
 
 import SwiftUI
 
+/// Reusable navigation row for settings lists
+///
+/// Creates consistent navigation rows with:
+/// - Colored circular icon
+/// - Title and subtitle text
+/// - Chevron indicator
+/// - Glass card styling
+///
+/// **Generic Type:**
+/// Accepts any SwiftUI View as destination, allowing flexible
+/// navigation to different settings screens.
+///
+/// **Design:**
+/// Matches iOS Settings app aesthetic with SF Symbols icons
+/// and glass morphism background.
+///
+/// **Usage:**
+/// ```swift
+/// SettingsNavigationRow(
+///     icon: "sparkles",
+///     iconColor: .appAccent,
+///     title: "Highlight Rules",
+///     subtitle: "Configure detection highlights",
+///     destination: HighlightSettingsView()
+/// )
+/// ```
 struct SettingsNavigationRow<Destination: View>: View {
+    
+    /// SF Symbol name for icon
     let icon: String
+    
+    /// Color for icon and circle background
     let iconColor: Color
+    
+    /// Primary text label
     let title: String
+    
+    /// Secondary descriptive text
     let subtitle: String
+    
+    /// Destination view for navigation
     let destination: Destination
     
     var body: some View {

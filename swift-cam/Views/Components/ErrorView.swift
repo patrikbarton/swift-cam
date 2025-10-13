@@ -2,12 +2,30 @@
 //  ErrorView.swift
 //  swift-cam
 //
-//  Error display component
+//  Error message display component
 //
 
 import SwiftUI
 
+/// Error message display with icon and description
+///
+/// Shows user-friendly error messages with:
+/// - Red warning triangle icon
+/// - "Processing Error" header
+/// - Detailed error message
+/// - Red-tinted background
+///
+/// **Design:**
+/// Soft red background with border, clear hierarchy,
+/// SF Pro system font for native iOS look.
+///
+/// **Usage:**
+/// ```swift
+/// ErrorView(message: "Unable to load image")
+/// ```
 struct ErrorView: View {
+    
+    /// Error message to display
     let message: String
     
     var body: some View {

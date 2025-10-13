@@ -2,12 +2,30 @@
 //  ResultsList.swift
 //  swift-cam
 //
-//  Results list component
+//  Classification results list with header
 //
 
 import SwiftUI
 
+/// Formatted list of classification results with header
+///
+/// Displays classification results in a clean, organized list:
+/// - **Header**: "Recognition Results" with top result's confidence badge
+/// - **List**: Individual ClassificationRow components
+/// - **Design**: Glass card with rounded corners
+///
+/// **Visual Hierarchy:**
+/// 1. Bold header with confidence indicator
+/// 2. Sorted results (highest confidence first)
+/// 3. Each row shows icon, name, and confidence %
+///
+/// **Usage:**
+/// ```swift
+/// ResultsList(results: viewModel.classificationResults)
+/// ```
 struct ResultsList: View {
+    
+    /// Classification results to display (pre-sorted by confidence)
     let results: [ClassificationResult]
     
     var body: some View {

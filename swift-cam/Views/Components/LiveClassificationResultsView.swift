@@ -2,13 +2,42 @@
 //  LiveClassificationResultsView.swift
 //  swift-cam
 //
-//  Live classification results display (new design)
+//  Real-time classification results for live camera feed
 //
 
 import SwiftUI
 
+/// Live classification results display for camera preview
+///
+/// Shows real-time ML classification results with:
+/// - "Live Detection" header
+/// - Current model indicator
+/// - Results list with fade-in animation
+/// - Empty state when no detections
+///
+/// **Features:**
+/// - Results automatically update as camera processes frames
+/// - Top 5 results displayed
+/// - Confidence-based color coding
+/// - Smooth transitions between states
+///
+/// **Design:**
+/// Compact layout optimized for overlay on camera feed,
+/// with dark background and white text for readability.
+///
+/// **Usage:**
+/// ```swift
+/// LiveClassificationResultsView(
+///     results: liveCameraVM.liveResults,
+///     model: .mobileNet
+/// )
+/// ```
 struct LiveClassificationResultsView: View {
+    
+    /// Current classification results (top 5)
     let results: [ClassificationResult]
+    
+    /// Active ML model being used
     let model: MLModelType
 
     var body: some View {

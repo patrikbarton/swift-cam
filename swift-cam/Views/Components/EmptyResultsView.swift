@@ -2,11 +2,30 @@
 //  EmptyResultsView.swift
 //  swift-cam
 //
-//  Empty state for classification results
+//  Empty state placeholder for no classification results
 //
 
 import SwiftUI
 
+/// Empty state view when no classification results exist
+///
+/// Friendly placeholder shown when:
+/// - No image has been selected yet
+/// - Classification hasn't been performed
+/// - User has cleared previous results
+///
+/// **Design:**
+/// - Sparkles icon in accent color
+/// - "Ready to Analyze" heading
+/// - Helpful guidance text
+/// - Centered, clean layout
+///
+/// **Usage:**
+/// ```swift
+/// if results.isEmpty && !isAnalyzing {
+///     EmptyResultsView()
+/// }
+/// ```
 struct EmptyResultsView: View {
     var body: some View {
         VStack(spacing: 12) {

@@ -2,12 +2,32 @@
 //  CaptureButton.swift
 //  swift-cam
 //
-//  Camera capture button component
+//  Standard iOS-style camera capture button component
 //
 
 import SwiftUI
 
+/// Standard camera shutter button with classic iOS design
+///
+/// Displays the familiar circular capture button with:
+/// - White outer ring (4pt stroke)
+/// - White inner circle (60pt diameter)
+/// - Total size: 70pt diameter
+///
+/// **Design:**
+/// Matches the standard iOS Camera app aesthetic for
+/// immediate user recognition and intuitive interaction.
+///
+/// **Usage:**
+/// ```swift
+/// CaptureButton {
+///     // Capture photo
+///     capturePhoto()
+/// }
+/// ```
 struct CaptureButton: View {
+    
+    /// Action to perform when button is tapped
     var action: () -> Void
 
     var body: some View {

@@ -2,12 +2,40 @@
 //  ClassificationRow.swift
 //  swift-cam
 //
-//  Individual classification result row
+//  Single classification result display row
 //
 
 import SwiftUI
 
+/// Individual classification result row with confidence indicator
+///
+/// Displays a single ML classification result with:
+/// - Confidence-colored icon badge
+/// - Object name (formatted, capitalized)
+/// - Confidence percentage
+/// - Glass morphism design
+///
+/// **Visual Design:**
+/// - Left: Circular icon with gradient based on confidence
+/// - Center: Object name in white text
+/// - Right: Confidence badge with percentage
+///
+/// **Color Coding:**
+/// - Green: 50-100% confidence
+/// - Yellow: 35-50% confidence
+/// - Orange: 20-35% confidence
+/// - Red: Below 20% confidence
+///
+/// **Usage:**
+/// ```swift
+/// ClassificationRow(result: ClassificationResult(
+///     identifier: "keyboard",
+///     confidence: 0.95
+/// ))
+/// ```
 struct ClassificationRow: View {
+    
+    /// The classification result to display
     let result: ClassificationResult
     
     var body: some View {

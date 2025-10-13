@@ -2,14 +2,42 @@
 //  HomeClassificationResultsView.swift
 //  swift-cam
 //
-//  Container for classification results display
+//  Container for photo classification results display
 //
 
 import SwiftUI
 
+/// Results container for Home tab classification
+///
+/// Orchestrates the display of classification results with proper
+/// state handling:
+/// - **Error**: Shows error message with icon
+/// - **Results**: Shows formatted results list
+/// - **Empty + Not Analyzing**: Shows empty state message
+/// - **Analyzing**: Container is hidden (loading shown elsewhere)
+///
+/// **Animations:**
+/// Uses asymmetric transitions for smooth appearance:
+/// - Insertion: Fade + scale + slide from bottom
+/// - Removal: Fade + scale + slide to top
+///
+/// **Usage:**
+/// ```swift
+/// HomeClassificationResultsView(
+///     results: viewModel.classificationResults,
+///     isAnalyzing: viewModel.isAnalyzing,
+///     error: viewModel.errorMessage
+/// )
+/// ```
 struct HomeClassificationResultsView: View {
+    
+    /// Classification results to display
     let results: [ClassificationResult]
+    
+    /// Whether analysis is in progress
     let isAnalyzing: Bool
+    
+    /// Optional error message
     let error: String?
     
     var body: some View {
