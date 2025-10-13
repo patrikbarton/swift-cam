@@ -79,7 +79,9 @@ class HomeViewModel: ObservableObject {
     private func loadLabels(for modelType: MLModelType) async {
         do {
             let labels = try await modelService.getLabels(for: modelType)
-            await MainActor.run { self.modelLabels = labels }
+            // Remove duplicates and sort
+            let uniqueLabels = Array(Set(labels)).sorted()
+            await MainActor.run { self.modelLabels = uniqueLabels }
         } catch {
             Logger.model.error("❌ Failed to get labels for \(modelType.displayName): \(error.localizedDescription)")
             // By not setting an error message, the UI can gracefully degrade

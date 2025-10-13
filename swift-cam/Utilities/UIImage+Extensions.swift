@@ -8,6 +8,7 @@
 import UIKit
 import CoreVideo
 import VideoToolbox
+import AVFoundation
 
 // MARK: - CVPixelBuffer Conversion
 extension UIImage {
@@ -76,6 +77,17 @@ extension UIImage {
         }
         
         self.init(cgImage: cgImage, scale: 1.0, orientation: orientation)
+    }
+    
+    /// Creates a downscaled version of the image for use as a thumbnail, preserving aspect ratio.
+    /// - Parameter size: The target size to fit the thumbnail within.
+    /// - Returns: A new, smaller `UIImage` instance.
+    func preparingThumbnail(of size: CGSize) -> UIImage? {
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { (context) in
+            let rect = AVMakeRect(aspectRatio: self.size, insideRect: CGRect(origin: .zero, size: size))
+            self.draw(in: rect)
+        }
     }
 }
 

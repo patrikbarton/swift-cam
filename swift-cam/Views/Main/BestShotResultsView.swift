@@ -100,7 +100,7 @@ struct ImageCandidateRow: View {
     var body: some View {
         Button(action: onSelect) {
             ZStack(alignment: .topTrailing) {
-                if let image = candidate.image {
+                if let image = candidate.thumbnail {
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fill)

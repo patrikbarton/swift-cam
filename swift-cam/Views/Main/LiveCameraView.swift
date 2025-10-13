@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import OSLog
 
 struct LiveCameraView: View {
     @ObservedObject var cameraManager: HomeViewModel

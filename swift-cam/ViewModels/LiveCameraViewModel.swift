@@ -41,10 +41,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         let id = UUID()
         let imageData: Data
         let result: ClassificationResult
-        
-        var image: UIImage? {
-            UIImage(data: imageData)
-        }
+        var thumbnail: UIImage? // For fast UI previews
         
         static func == (lhs: LiveCameraViewModel.CaptureCandidate, rhs: LiveCameraViewModel.CaptureCandidate) -> Bool {
             lhs.id == rhs.id
@@ -64,6 +61,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     private var lastProcessingTime: Date = Date()
     private let processingInterval: TimeInterval = 0.5 // Reduced frequency for better performance
     private var processingQueue = DispatchQueue(label: "classification.queue", qos: .userInitiated)
+    private let thumbnailQueue = DispatchQueue(label: "thumbnail.generation.queue", qos: .utility)
     
     private var currentModel: MLModelType = .mobileNet
     private var classificationRequest: VNCoreMLRequest?
@@ -258,13 +256,13 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     }
     
     private func processBestShotCandidates() {
-        // Sort candidates by confidence and take the top 3
-        let top = Array(bestShotCandidates.sorted { $0.result.confidence > $1.result.confidence }.prefix(3))
+        // Sort candidates by confidence
+        let sortedCandidates = bestShotCandidates.sorted { $0.result.confidence > $1.result.confidence }
         
-        Logger.bestShot.info("Found \(self.bestShotCandidates.count) candidates. Presenting top \(top.count).")
+        Logger.bestShot.info("Found \(self.bestShotCandidates.count) candidates. Presenting top \(sortedCandidates.count).")
         
         // Publish the top candidates to the UI
-        self.topCandidates = top
+        self.topCandidates = sortedCandidates
         self.bestShotCandidates.removeAll()
     }
     
@@ -335,12 +333,21 @@ extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
         
         // Check if this is a "Best Shot" capture
         if let result = pendingBestShotResult {
-            hapticManager.impact(.light)
-            let candidate = CaptureCandidate(imageData: imageData, result: result)
-            bestShotCandidates.append(candidate)
-            bestShotCandidateCount += 1
-            Logger.bestShot.info("Successfully captured hi-res candidate for \(result.identifier).")
-            pendingBestShotResult = nil // Reset pending result
+            self.pendingBestShotResult = nil // Reset immediately
+            
+            // Create a thumbnail in the background to avoid blocking the main thread
+            thumbnailQueue.async {
+                let thumbnail = UIImage(data: imageData)?.preparingThumbnail(of: CGSize(width: 400, height: 400))
+                
+                // Add the candidate on the main thread
+                DispatchQueue.main.async {
+                    let candidate = CaptureCandidate(imageData: imageData, result: result, thumbnail: thumbnail)
+                    self.bestShotCandidates.append(candidate)
+                    self.bestShotCandidateCount += 1
+                    self.hapticManager.impact(.light)
+                    Logger.bestShot.info("Successfully captured hi-res candidate for \(result.identifier).")
+                }
+            }
             return // End here for best shot captures
         }
         
