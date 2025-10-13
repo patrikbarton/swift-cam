@@ -421,7 +421,6 @@ struct CameraTabView: View {
     var body: some View {
         // Camera directly embedded in tab - Tab Bar stays visible!
         LiveCameraView(
-            cameraManager: viewModel, 
             selectedModel: appStateViewModel.selectedModel, 
             appStateViewModel: appStateViewModel, // Pass ViewModel instead of value
             liveCameraManager: liveCameraManager,

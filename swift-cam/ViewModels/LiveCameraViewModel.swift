@@ -242,7 +242,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         }
     }
     
-    private func stopBestShotSequence() {
+    func stopBestShotSequence() {
         guard isBestShotSequenceActive else { return }
         
         hapticManager.generate(.success)

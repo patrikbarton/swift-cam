@@ -9,7 +9,6 @@ import SwiftUI
 import OSLog
 
 struct LiveCameraView: View {
-    @ObservedObject var cameraManager: HomeViewModel
     let selectedModel: MLModelType
     @ObservedObject var appStateViewModel: AppStateViewModel // Observe changes instead of copying value
     @Environment(\.dismiss) private var dismiss
@@ -19,8 +18,7 @@ struct LiveCameraView: View {
     @State private var showLowResPreview = false
     @State private var showBestShotResults = false
 
-    init(cameraManager: HomeViewModel, selectedModel: MLModelType, appStateViewModel: AppStateViewModel, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel(), onCustomDismiss: (() -> Void)? = nil) {
-        self.cameraManager = cameraManager
+    init(selectedModel: MLModelType, appStateViewModel: AppStateViewModel, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel(), onCustomDismiss: (() -> Void)? = nil) {
         self.selectedModel = selectedModel
         self.appStateViewModel = appStateViewModel
         _liveCameraManager = StateObject(wrappedValue: liveCameraManager)
@@ -156,11 +154,15 @@ struct LiveCameraView: View {
         HStack(spacing: 60) {
             // Best Shot Button
             Button(action: { 
-                liveCameraManager.startBestShotSequence(duration: appStateViewModel.bestShotDuration)
+                if liveCameraManager.isBestShotSequenceActive {
+                    liveCameraManager.stopBestShotSequence()
+                } else {
+                    liveCameraManager.startBestShotSequence(duration: appStateViewModel.bestShotDuration)
+                }
             }) {
-                Image(systemName: "timer")
+                Image(systemName: liveCameraManager.isBestShotSequenceActive ? "xmark" : "timer")
                     .font(.system(size: 28, weight: .medium))
-                    .foregroundColor(.white)
+                    .foregroundColor(liveCameraManager.isBestShotSequenceActive ? .yellow : .white)
             }
             .padding(20)
             .background(Color.white.opacity(0.2))
@@ -274,7 +276,7 @@ struct LiveCameraView: View {
 }
 
 #if DEBUG
-class MockCameraViewModel: HomeViewModel {}
+class MockHomeViewModel: HomeViewModel {}
 
 class MockLiveCameraViewModelForPreview: LiveCameraViewModel {
     override func startSession() {
@@ -283,7 +285,7 @@ class MockLiveCameraViewModelForPreview: LiveCameraViewModel {
 }
 
 #Preview {
-    LiveCameraView(cameraManager: MockCameraViewModel(), selectedModel: .mobileNet, appStateViewModel: AppStateViewModel(), liveCameraManager: MockLiveCameraViewModelForPreview())
+    LiveCameraView(selectedModel: .mobileNet, appStateViewModel: AppStateViewModel(), liveCameraManager: MockLiveCameraViewModelForPreview())
 }
 #endif
 
