@@ -83,7 +83,7 @@ struct HomeTabView: View {
                                 .transition(.scale.combined(with: .opacity))
                             } else {
                                 // Premium Empty State
-                                PremiumEmptyStateView()
+                                EmptyStateView()
                                     .transition(.scale.combined(with: .opacity))
                             }
                             

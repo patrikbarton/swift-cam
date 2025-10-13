@@ -11,7 +11,7 @@ import Foundation
 // MARK: - Logging
 
 extension Logger {
-    private static var subsystem = Bundle.main.bundleIdentifier!
+    private static var subsystem = Bundle.main.bundleIdentifier ?? "com.swift-cam"
     
     /// UI-related logging
     static let ui = Logger(subsystem: subsystem, category: "UI")

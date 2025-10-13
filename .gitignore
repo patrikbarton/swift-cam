@@ -72,3 +72,5 @@ swift-cam/DeveloperSettings.xcconfig
 gha-creds-*.json
 
 .MDs/
+MDs/*
+MDs

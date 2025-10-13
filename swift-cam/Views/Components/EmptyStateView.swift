@@ -1,5 +1,5 @@
 //
-//  PremiumEmptyStateView.swift
+//  EmptyStateView.swift
 //  swift-cam
 //
 //  Empty state view with animated icon and guidance text
@@ -8,7 +8,7 @@
 import SwiftUI
 
 /// Premium empty state with animated icons
-struct PremiumEmptyStateView: View {
+struct EmptyStateView: View {
     @State private var isAnimating = false
     
     var body: some View {
@@ -128,6 +128,6 @@ struct PremiumEmptyStateView: View {
         )
         .ignoresSafeArea()
         
-        PremiumEmptyStateView()
+        EmptyStateView()
     }
 }

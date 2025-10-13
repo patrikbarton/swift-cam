@@ -201,9 +201,11 @@ class LiveCameraViewModel: NSObject, ObservableObject {
             let visionModel = try VNCoreMLModel(for: mlModel)
             
             // 3. Create the request with the completion handler
+            // Fixed: Use Task with @MainActor to avoid nested dispatch and retain cycles
             let request = VNCoreMLRequest(model: visionModel) { [weak self] request, error in
-                DispatchQueue.main.async {
-                    self?.processLiveClassifications(for: request, error: error)
+                guard let self = self else { return }
+                Task { @MainActor in
+                    self.processLiveClassifications(for: request, error: error)
                 }
             }
             request.imageCropAndScaleOption = .centerCrop
