@@ -63,6 +63,11 @@ class AppStateViewModel: ObservableObject {
         set { settings.faceBlurringEnabled = newValue }
     }
     
+    var livePreviewBlurEnabled: Bool {
+        get { settings.livePreviewBlurEnabled }
+        set { settings.livePreviewBlurEnabled = newValue }
+    }
+    
     var blurStyle: BlurStyle {
         get { settings.blurStyle }
         set { settings.blurStyle = newValue }
@@ -71,6 +76,11 @@ class AppStateViewModel: ObservableObject {
     var isAssistedCaptureEnabled: Bool {
         get { settings.isAssistedCaptureEnabled }
         set { settings.isAssistedCaptureEnabled = newValue }
+    }
+    
+    var includeLocationMetadata: Bool {
+        get { settings.includeLocationMetadata }
+        set { settings.includeLocationMetadata = newValue }
     }
     
     var bestShotTargetLabel: String {

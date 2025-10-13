@@ -44,12 +44,20 @@ class UserSettingsViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(faceBlurringEnabled, forKey: Keys.faceBlurring) }
     }
     
+    @Published var livePreviewBlurEnabled: Bool = false {
+        didSet { UserDefaults.standard.set(livePreviewBlurEnabled, forKey: Keys.livePreviewBlur) }
+    }
+    
     @Published var blurStyle: BlurStyle = .gaussian {
         didSet { saveBlurStyle() }
     }
     
     @Published var isAssistedCaptureEnabled: Bool = false {
         didSet { UserDefaults.standard.set(isAssistedCaptureEnabled, forKey: Keys.assistedCapture) }
+    }
+    
+    @Published var includeLocationMetadata: Bool = false {
+        didSet { UserDefaults.standard.set(includeLocationMetadata, forKey: Keys.locationMetadata) }
     }
     
     @Published var bestShotTargetLabel: String = "" {
@@ -70,8 +78,10 @@ class UserSettingsViewModel: ObservableObject {
         static let selectedModel = "selectedModel"
         static let fullScreenCamera = "fullScreenCamera"
         static let faceBlurring = "faceBlurringEnabled"
+        static let livePreviewBlur = "livePreviewBlurEnabled"
         static let blurStyle = "blurStyle"
         static let assistedCapture = "isAssistedCaptureEnabled"
+        static let locationMetadata = "includeLocationMetadata"
         static let bestShotTarget = "bestShotTargetLabel"
         static let bestShotDuration = "bestShotDuration"
         static let highlightRules = "highlightRules"
@@ -90,8 +100,10 @@ class UserSettingsViewModel: ObservableObject {
         loadSelectedModel()
         loadFullScreenCamera()
         loadFaceBlurring()
+        loadLivePreviewBlur()
         loadBlurStyle()
         loadAssistedCapture()
+        loadLocationMetadata()
         loadBestShotTarget()
         loadBestShotDuration()
         loadHighlightRules()
@@ -116,6 +128,12 @@ class UserSettingsViewModel: ObservableObject {
         }
     }
     
+    private func loadLivePreviewBlur() {
+        if UserDefaults.standard.object(forKey: Keys.livePreviewBlur) != nil {
+            livePreviewBlurEnabled = UserDefaults.standard.bool(forKey: Keys.livePreviewBlur)
+        }
+    }
+    
     private func loadBlurStyle() {
         if let styleRawValue = UserDefaults.standard.string(forKey: Keys.blurStyle),
            let style = BlurStyle(rawValue: styleRawValue) {
@@ -126,6 +144,12 @@ class UserSettingsViewModel: ObservableObject {
     private func loadAssistedCapture() {
         if UserDefaults.standard.object(forKey: Keys.assistedCapture) != nil {
             isAssistedCaptureEnabled = UserDefaults.standard.bool(forKey: Keys.assistedCapture)
+        }
+    }
+    
+    private func loadLocationMetadata() {
+        if UserDefaults.standard.object(forKey: Keys.locationMetadata) != nil {
+            includeLocationMetadata = UserDefaults.standard.bool(forKey: Keys.locationMetadata)
         }
     }
     
@@ -178,6 +202,7 @@ class UserSettingsViewModel: ObservableObject {
         faceBlurringEnabled = false
         blurStyle = .gaussian
         isAssistedCaptureEnabled = false
+        includeLocationMetadata = false
         bestShotTargetLabel = ""
         bestShotDuration = 10.0
         highlightRules = ["keyboard": 0.8, "mouse": 0.8, "laptop": 0.8]

@@ -74,8 +74,8 @@ struct HomeTabView: View {
                     VStack(spacing: 0) {
                         // Floating Header
                         VStack(spacing: 16) {
-                            // App Title with Premium Style
-                            HStack {
+                            // App Title with Premium Style and Status
+                            HStack(alignment: .top, spacing: 16) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("AI Vision")
                                         .font(.system(size: 36, weight: .bold, design: .rounded))
@@ -93,22 +93,18 @@ struct HomeTabView: View {
                                 }
                                 
                                 Spacer()
+                                
+                                // Modern Status Badge - moved to the right
+                                StatusTextView(viewModel: viewModel, selectedModel: appStateViewModel.selectedModel)
                             }
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
-                            
-                            // Modern Status Badge
-                            HStack {
-                                StatusTextView(viewModel: viewModel, selectedModel: appStateViewModel.selectedModel)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 24)
                         }
                         .padding(.bottom, 32)
                         
                         // Main Content Area
                         VStack(spacing: 24) {
-                            // Hero Section - Image Preview or Empty State
+                            // Hero Section - Image Preview (no empty state)
                             if viewModel.capturedImage != nil || viewModel.isAnalyzing {
                                 ImagePreviewView(
                                     image: viewModel.capturedImage,
@@ -119,9 +115,69 @@ struct HomeTabView: View {
                                 )
                                 .transition(.scale.combined(with: .opacity))
                             } else {
-                                // Premium Empty State
-                                EmptyStateView()
-                                    .transition(.scale.combined(with: .opacity))
+                                // Large clickable photo library preview
+                                PhotosPicker(
+                                    selection: $selectedImage,
+                                    matching: .images,
+                                    photoLibrary: .shared()
+                                ) {
+                                    VStack(spacing: 20) {
+                                        Image(systemName: "photo.on.rectangle.angled")
+                                            .font(.system(size: 60, weight: .light))
+                                            .foregroundStyle(
+                                                LinearGradient(
+                                                    colors: [.appAccent, .appSecondary],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                            )
+                                        
+                                        VStack(spacing: 8) {
+                                            Text("Choose Photo")
+                                                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                                                .foregroundColor(.white)
+                                            
+                                            Text("Tap to select from library")
+                                                .font(.system(size: 15, weight: .medium))
+                                                .foregroundColor(.white.opacity(0.7))
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 280)
+                                    .background(
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 28)
+                                                .fill(.ultraThinMaterial)
+                                            
+                                            RoundedRectangle(cornerRadius: 28)
+                                                .fill(
+                                                    LinearGradient(
+                                                        colors: [
+                                                            Color.white.opacity(0.12),
+                                                            Color.white.opacity(0.04)
+                                                        ],
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    )
+                                                )
+                                            
+                                            RoundedRectangle(cornerRadius: 28)
+                                                .stroke(
+                                                    LinearGradient(
+                                                        colors: [
+                                                            Color.white.opacity(0.3),
+                                                            Color.white.opacity(0.1)
+                                                        ],
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    ),
+                                                    lineWidth: 1.5
+                                                )
+                                        }
+                                    )
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                                .transition(.scale.combined(with: .opacity))
                             }
                             
                             // Classification Results (if available)
@@ -134,75 +190,43 @@ struct HomeTabView: View {
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
                             }
                             
-                            // Action Buttons Section
-                            VStack(spacing: 16) {
-                                // Photo Library Button
-                                PhotosPicker(
-                                    selection: $selectedImage,
-                                    matching: .images,
-                                    photoLibrary: .shared()
-                                ) {
-                                    HStack(spacing: 16) {
-                                        // Icon Container
-                                        ZStack {
-                                            Circle()
-                                                .fill(.white.opacity(0.15))
-                                                .frame(width: 56, height: 56)
-                                            
-                                            Image(systemName: "photo.on.rectangle.angled")
-                                                .font(.system(size: 24, weight: .semibold))
-                                                .foregroundStyle(.white)
+                            // Action Buttons Section (only show when image is loaded)
+                            if viewModel.capturedImage != nil {
+                                VStack(spacing: 16) {
+                                    // Clear Button
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            viewModel.clearImage()
                                         }
-                                        
-                                        // Text Content
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Photo Library")
-                                                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                                .foregroundStyle(.white)
-                                            
-                                            Text("Choose from your photos")
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundStyle(.white.opacity(0.6))
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        // Chevron
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundStyle(.white.opacity(0.4))
+                                    }) {
+                                        Label("Clear Image", systemImage: "arrow.counterclockwise")
+                                            .font(.system(size: 17, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 54)
+                                            .background(
+                                                ZStack {
+                                                    RoundedRectangle(cornerRadius: 16)
+                                                        .fill(.ultraThinMaterial)
+                                                    
+                                                    RoundedRectangle(cornerRadius: 16)
+                                                        .fill(
+                                                            LinearGradient(
+                                                                colors: [
+                                                                    Color.red.opacity(0.3),
+                                                                    Color.orange.opacity(0.2)
+                                                                ],
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                        )
+                                                }
+                                            )
                                     }
-                                    .padding(20)
-                                    .background(
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 24)
-                                                .fill(.ultraThinMaterial)
-                                            
-                                            RoundedRectangle(cornerRadius: 24)
-                                                .fill(
-                                                    LinearGradient(
-                                                        colors: [
-                                                            Color.appAccent.opacity(0.3),
-                                                            Color.appSecondary.opacity(0.2)
-                                                        ],
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    )
-                                                )
-                                            
-                                            RoundedRectangle(cornerRadius: 24)
-                                                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
-                                        }
-                                    )
-                                    .shadow(color: .black.opacity(0.1), radius: 20, y: 10)
+                                    .buttonStyle(ScaleButtonStyle())
                                 }
-                                .buttonStyle(ScaleButtonStyle())
-                                .disabled(viewModel.isLoadingModel || viewModel.isAnalyzing || viewModel.isSwitchingModel)
-                                .opacity((viewModel.isLoadingModel || viewModel.isAnalyzing || viewModel.isSwitchingModel) ? 0.5 : 1)
+                                .padding(.horizontal, 24)
                             }
-                            .padding(.horizontal, 24)
-                            .padding(.top, 8)
-                            
                             // Bottom Spacer
                             Spacer(minLength: 40)
                         }

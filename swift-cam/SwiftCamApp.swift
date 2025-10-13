@@ -13,6 +13,7 @@ import SwiftUI
 /// - Initializes the app state and coordinates model preloading
 /// - Shows splash screen during initialization
 /// - Transitions to main content when ready
+/// - Forces portrait orientation for optimal camera experience
 ///
 /// **App Architecture:**
 /// ```
@@ -36,6 +37,7 @@ struct SwiftCamApp: App {
     
     /// App state coordinator managing initialization and settings
     @StateObject private var appState = AppStateViewModel()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
         WindowGroup {
@@ -49,5 +51,14 @@ struct SwiftCamApp: App {
                     .environmentObject(appState)
             }
         }
+    }
+}
+
+/// App delegate to manage orientation lock
+class AppDelegate: NSObject, UIApplicationDelegate {
+    
+    /// Restricts app to portrait orientation only
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        return .portrait
     }
 }

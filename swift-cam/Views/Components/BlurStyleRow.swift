@@ -12,9 +12,13 @@ struct BlurStyleRow: View {
     let style: BlurStyle
     let isSelected: Bool
     let onSelect: () -> Void
+    private let hapticManager = HapticManagerService.shared
     
     var body: some View {
-        Button(action: onSelect) {
+        Button(action: {
+            hapticManager.impact(.light)
+            onSelect()
+        }) {
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
@@ -49,6 +53,7 @@ struct BlurStyleRow: View {
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
+        .buttonStyle(.plain)
     }
     
     private func iconForStyle(_ style: BlurStyle) -> String {

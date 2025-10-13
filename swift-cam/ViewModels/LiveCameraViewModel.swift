@@ -13,6 +13,8 @@ import CoreML
 import CoreImage
 import OSLog
 import CoreLocation
+import ImageIO
+import UniformTypeIdentifiers
 
 
 /// Manages live camera feed and real-time ML classification
@@ -45,8 +47,12 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     var highlightRules: [String: Double] = [:]
     @Published var isLoadingModel = false
     @Published var lowResPreviewImage: UIImage? = nil
+    @Published var faceBlurOverlayImage: UIImage? = nil // Blurred preview for normal camera mode
+    @Published var showSaveConfirmation = false
     var showLowResPreview = false
-    var faceBlurringEnabled = false
+    var faceBlurringEnabled = false // Blur faces in saved photos
+    var livePreviewBlurEnabled = false // Show blur overlay on live preview (performance intensive)
+    var includeLocationMetadata = true // Setting to control location embedding
     var blurStyle: BlurStyle = .gaussian
     var bestShotTargetLabel: String = ""
     
@@ -79,10 +85,10 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     private var photoOutput = AVCapturePhotoOutput()
     private var videoOutput = AVCaptureVideoDataOutput()
     private let photoSaver = PhotoSaverService()
-    @Published var showSaveConfirmation = false
     
     // Enhanced object tracking properties
     private var lastProcessingTime: Date = Date()
+    private var lastBlurOverlayTime: Date = Date() // Separate timing for blur overlay
     private let processingInterval: TimeInterval = 0.5 // Reduced frequency for better performance
     private var processingQueue = DispatchQueue(label: "classification.queue", qos: .userInitiated)
     private let thumbnailQueue = DispatchQueue(label: "thumbnail.generation.queue", qos: .utility)
@@ -382,38 +388,133 @@ extension LiveCameraViewModel: CLLocationManagerDelegate {
 extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         guard let imageData = photo.fileDataRepresentation() else { return }
+        guard let originalImage = UIImage(data: imageData) else { return }
         
-        // Check if this is a "Best Shot" capture
-        if let result = pendingBestShotResult {
-            self.pendingBestShotResult = nil // Reset immediately
+        // Extract original metadata from photo
+        let originalMetadata = photo.metadata as [String: Any]
+        
+        // Apply face blurring if enabled (for both manual and best shot captures)
+        Task {
+            let processedImage = await applyFaceBlurIfNeeded(to: originalImage)
             
-            // Create a thumbnail in the background to avoid blocking the main thread
-            thumbnailQueue.async {
-                let thumbnail = UIImage(data: imageData)?.preparingThumbnail(of: CGSize(width: 400, height: 400))
+            // Preserve EXIF metadata when creating final image data
+            let finalImageData = createImageDataWithMetadata(
+                image: processedImage,
+                originalMetadata: originalMetadata,
+                location: includeLocationMetadata ? currentLocation : nil
+            )
+            
+            guard let finalImageData = finalImageData else {
+                Logger.bestShot.error("Failed to create image data with metadata")
+                return
+            }
+            
+            // Check if this is a "Best Shot" capture
+            if let result = pendingBestShotResult {
+                self.pendingBestShotResult = nil // Reset immediately
                 
-                // Add the candidate on the main thread
-                DispatchQueue.main.async {
-                    let candidate = CaptureCandidate(imageData: imageData, result: result, thumbnail: thumbnail, location: self.currentLocation)
-                    self.bestShotCandidates.append(candidate)
-                    self.bestShotCandidateCount += 1
-                    self.hapticManager.impact(.light)
-                    Logger.bestShot.info("Successfully captured hi-res candidate for \(result.identifier).")
+                // Create a thumbnail in the background to avoid blocking the main thread
+                thumbnailQueue.async {
+                    let thumbnail = processedImage.preparingThumbnail(of: CGSize(width: 400, height: 400))
+                    
+                    // Add the candidate on the main thread
+                    DispatchQueue.main.async {
+                        let candidate = CaptureCandidate(imageData: finalImageData, result: result, thumbnail: thumbnail, location: self.currentLocation)
+                        self.bestShotCandidates.append(candidate)
+                        self.bestShotCandidateCount += 1
+                        self.hapticManager.impact(.light)
+                        Logger.bestShot.info("Successfully captured hi-res candidate for \(result.identifier).")
+                    }
+                }
+                return // End here for best shot captures
+            }
+            
+            // If not a best shot capture, it's a manual capture. Save it directly.
+            hapticManager.impact(.heavy)
+            
+            // Save photo with optional location (metadata already embedded)
+            let locationToSave = includeLocationMetadata ? currentLocation : nil
+            photoSaver.saveImageData(finalImageData, location: locationToSave)
+            
+            // Trigger confirmation UI
+            DispatchQueue.main.async {
+                self.showSaveConfirmation = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    self.showSaveConfirmation = false
                 }
             }
-            return // End here for best shot captures
         }
+    }
+    
+    /// Creates JPEG data from UIImage while preserving EXIF metadata
+    ///
+    /// - Parameters:
+    ///   - image: The processed UIImage to save
+    ///   - originalMetadata: Original EXIF metadata from AVCapturePhoto
+    ///   - location: Optional GPS location to embed
+    /// - Returns: JPEG data with preserved metadata
+    private func createImageDataWithMetadata(
+        image: UIImage,
+        originalMetadata: [String: Any],
+        location: CLLocation?
+    ) -> Data? {
+        guard let cgImage = image.cgImage else { return nil }
         
-        // If not a best shot capture, it's a manual capture. Save it directly.
-        hapticManager.impact(.heavy)
-        photoSaver.saveImageData(imageData, location: currentLocation)
+        // Create mutable metadata dictionary
+        var metadata = originalMetadata
         
-        // Trigger confirmation UI
-        DispatchQueue.main.async {
-            self.showSaveConfirmation = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                self.showSaveConfirmation = false
+        // Add GPS metadata if location provided
+        if let location = location {
+            var gpsMetadata: [String: Any] = [:]
+            
+            let latitude = location.coordinate.latitude
+            let longitude = location.coordinate.longitude
+            
+            gpsMetadata[kCGImagePropertyGPSLatitude as String] = abs(latitude)
+            gpsMetadata[kCGImagePropertyGPSLatitudeRef as String] = latitude >= 0 ? "N" : "S"
+            gpsMetadata[kCGImagePropertyGPSLongitude as String] = abs(longitude)
+            gpsMetadata[kCGImagePropertyGPSLongitudeRef as String] = longitude >= 0 ? "E" : "W"
+            
+            if location.altitude >= 0 {
+                gpsMetadata[kCGImagePropertyGPSAltitude as String] = location.altitude
+                gpsMetadata[kCGImagePropertyGPSAltitudeRef as String] = 0
             }
+            
+            if location.horizontalAccuracy >= 0 {
+                gpsMetadata[kCGImagePropertyGPSHPositioningError as String] = location.horizontalAccuracy
+            }
+            
+            // Add timestamp
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy:MM:dd"
+            gpsMetadata[kCGImagePropertyGPSDateStamp as String] = dateFormatter.string(from: location.timestamp)
+            
+            dateFormatter.dateFormat = "HH:mm:ss"
+            gpsMetadata[kCGImagePropertyGPSTimeStamp as String] = dateFormatter.string(from: location.timestamp)
+            
+            metadata[kCGImagePropertyGPSDictionary as String] = gpsMetadata
         }
+        
+        // Create output data
+        let mutableData = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            mutableData,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else {
+            return nil
+        }
+        
+        // Add image with metadata
+        CGImageDestinationAddImage(destination, cgImage, metadata as CFDictionary)
+        
+        // Finalize
+        guard CGImageDestinationFinalize(destination) else {
+            return nil
+        }
+        
+        return mutableData as Data
     }
 }
 
@@ -426,16 +527,19 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
         
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
-        // KEY CHANGE: Use .right orientation for portrait mode (matches actual device orientation)
-        let imageOrientation = CGImagePropertyOrientation.right
+        // Determine proper orientation based on camera position
+        // Camera sensor provides landscape data, we need to rotate for portrait display
+        let isFrontCamera = activeCamera?.position == .front
         
         if showLowResPreview {
             processingQueue.async {
                 let originalCIImage = CIImage(cvPixelBuffer: pixelBuffer)
-                let rotatedCIImage = originalCIImage.oriented(imageOrientation)
+                
+                // Don't apply any orientation here - keep raw sensor data
+                // The Image view will handle the display orientation
                 
                 // Crop to center square first (matching .centerCrop behavior)
-                let imageExtent = rotatedCIImage.extent
+                let imageExtent = originalCIImage.extent
                 let shorterSide = min(imageExtent.width, imageExtent.height)
                 let croppingRect = CGRect(
                     x: (imageExtent.width - shorterSide) / 2.0,
@@ -443,7 +547,7 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
                     width: shorterSide,
                     height: shorterSide
                 )
-                let croppedCIImage = rotatedCIImage.cropped(to: croppingRect)
+                let croppedCIImage = originalCIImage.cropped(to: croppingRect)
                 
                 // Scale down to model input size
                 let scaleX = self.modelInputSize.width / croppedCIImage.extent.width
@@ -452,8 +556,8 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
                 
                 let scaledImage = croppedCIImage.transformed(by: transform)
                 
-                // Apply face blurring to preview if enabled
-                if self.faceBlurringEnabled {
+                // Apply face blurring to low-res preview if live preview blur enabled
+                if self.livePreviewBlurEnabled {
                     Task {
                         var finalImageToDisplay = scaledImage
                         do {
@@ -474,7 +578,10 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
                         }
                         
                         if let cgImage = self.context.createCGImage(finalImageToDisplay, from: finalImageToDisplay.extent) {
-                            let finalImage = UIImage(cgImage: cgImage)
+                            // Create UIImage with proper orientation for display
+                            // Portrait mode requires 90° rotation from landscape sensor data
+                            let orientation: UIImage.Orientation = isFrontCamera ? .leftMirrored : .right
+                            let finalImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
                             DispatchQueue.main.async {
                                 self.lowResPreviewImage = finalImage
                             }
@@ -482,7 +589,9 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
                     }
                 } else {
                     if let cgImage = self.context.createCGImage(scaledImage, from: scaledImage.extent) {
-                        let finalImage = UIImage(cgImage: cgImage)
+                        // Create UIImage with proper orientation for display
+                        let orientation: UIImage.Orientation = isFrontCamera ? .leftMirrored : .right
+                        let finalImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
                         DispatchQueue.main.async {
                             self.lowResPreviewImage = finalImage
                         }
@@ -495,12 +604,49 @@ extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
             }
         }
         
+        // Handle face blur overlay for normal camera view (not low-res preview)
+        if !showLowResPreview && livePreviewBlurEnabled {
+            // Update blur overlay less frequently (every 1 second) using separate timer
+            let shouldUpdateBlur = currentTime.timeIntervalSince(lastBlurOverlayTime) >= 1.0
+            if shouldUpdateBlur {
+                lastBlurOverlayTime = currentTime
+                processingQueue.async {
+                    Task {
+                        do {
+                            // Create a lower resolution preview for blur overlay
+                            if let blurredImage = try await self.faceBlurService.blurFaces(in: pixelBuffer, blurRadius: 15.0, blurStyle: self.blurStyle) {
+                                // Convert to UIImage with proper orientation
+                                if let cgImage = self.context.createCGImage(blurredImage, from: blurredImage.extent) {
+                                    let orientation: UIImage.Orientation = isFrontCamera ? .leftMirrored : .right
+                                    let finalImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
+                                    DispatchQueue.main.async {
+                                        self.faceBlurOverlayImage = finalImage
+                                    }
+                                }
+                            }
+                        } catch {
+                            // Clear overlay if blur fails
+                            DispatchQueue.main.async {
+                                self.faceBlurOverlayImage = nil
+                            }
+                        }
+                    }
+                }
+            }
+        } else if faceBlurOverlayImage != nil {
+            DispatchQueue.main.async {
+                self.faceBlurOverlayImage = nil
+            }
+        }
+        
         guard let classificationRequest = classificationRequest else { return }
         
         lastProcessingTime = currentTime
         
-        // KEY CHANGE: Pass correct orientation to the model request handler
-        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: imageOrientation)
+        // Pass correct orientation to the model request handler
+        // For Vision framework, we need CGImagePropertyOrientation (not UIImage.Orientation)
+        let visionOrientation: CGImagePropertyOrientation = isFrontCamera ? .rightMirrored : .right
+        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: visionOrientation)
         
         do {
             try handler.perform([classificationRequest])

@@ -133,7 +133,9 @@ struct LiveCameraView: View {
         .onAppear {
             liveCameraManager.updateModel(to: selectedModel)
             liveCameraManager.faceBlurringEnabled = appStateViewModel.faceBlurringEnabled
+            liveCameraManager.livePreviewBlurEnabled = appStateViewModel.livePreviewBlurEnabled
             liveCameraManager.blurStyle = appStateViewModel.blurStyle
+            liveCameraManager.includeLocationMetadata = appStateViewModel.includeLocationMetadata
             liveCameraManager.highlightRules = appStateViewModel.highlightRules // Set initial rules
             liveCameraManager.bestShotTargetLabel = appStateViewModel.bestShotTargetLabel // Set initial target
             liveCameraManager.startSession()
@@ -144,8 +146,14 @@ struct LiveCameraView: View {
         .onChange(of: appStateViewModel.faceBlurringEnabled) { _, newValue in
             liveCameraManager.faceBlurringEnabled = newValue
         }
+        .onChange(of: appStateViewModel.livePreviewBlurEnabled) { _, newValue in
+            liveCameraManager.livePreviewBlurEnabled = newValue
+        }
         .onChange(of: appStateViewModel.blurStyle) { _, newValue in
             liveCameraManager.blurStyle = newValue
+        }
+        .onChange(of: appStateViewModel.includeLocationMetadata) { _, newValue in
+            liveCameraManager.includeLocationMetadata = newValue
         }
         .onChange(of: appStateViewModel.highlightRules) { _, newRules in
             liveCameraManager.highlightRules = newRules
@@ -163,6 +171,16 @@ struct LiveCameraView: View {
             CameraPreviewView(session: liveCameraManager.session)
                 .border(liveCameraManager.shouldHighlight ? Color.green : Color.clear, width: 5)
                 .ignoresSafeArea()
+            
+            // Face blur overlay (for normal camera mode)
+            if !showLowResPreview, let blurOverlay = liveCameraManager.faceBlurOverlayImage {
+                Image(uiImage: blurOverlay)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .clipped()
+                    .allowsHitTesting(false) // CRITICAL: Don't block touches!
+            }
 
             // Overlays
             countdownOverlay
@@ -193,6 +211,16 @@ struct LiveCameraView: View {
                     CameraPreviewView(session: liveCameraManager.session)
                         .border(liveCameraManager.shouldHighlight ? Color.green : Color.clear, width: 5)
                         .clipShape(Rectangle())
+                    
+                    // Face blur overlay (for normal camera mode)
+                    if !showLowResPreview, let blurOverlay = liveCameraManager.faceBlurOverlayImage {
+                        Image(uiImage: blurOverlay)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geometry.size.width, height: geometry.size.width) // Square frame
+                            .clipped()
+                            .allowsHitTesting(false) // CRITICAL: Don't block touches!
+                    }
 
                     countdownOverlay
                     lowResPreviewOverlay

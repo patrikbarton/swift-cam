@@ -58,10 +58,11 @@ class FaceBlurringService {
         // Create face detection request
         let faceRequest = VNDetectFaceRectanglesRequest()
         
-        // Perform face detection
+        // Perform face detection with orientation
         let handler = VNImageRequestHandler(
             cgImage: cgImage,
-            orientation: image.imageOrientation.cgImagePropertyOrientation
+            orientation: image.imageOrientation.cgImagePropertyOrientation,
+            options: [:]
         )
         try handler.perform([faceRequest])
         
@@ -73,16 +74,19 @@ class FaceBlurringService {
         
         Logger.privacy.info("🔒 Detected \(faces.count) face(s), applying blur")
         
-        // Convert to CIImage for filtering
-        guard var ciImage = CIImage(image: image) else {
-            throw FaceBlurError.invalidImage
-        }
+        // Create CIImage from cgImage with orientation applied
+        // This ensures coordinate systems match between Vision and CIImage
+        var ciImage = CIImage(cgImage: cgImage)
+        
+        // Apply orientation transform to match Vision's coordinate space
+        ciImage = ciImage.oriented(image.imageOrientation.cgImagePropertyOrientation)
         
         // Apply blur to each detected face
         for face in faces {
             let boundingBox = face.boundingBox
             
             // Convert normalized coordinates to image coordinates
+            // Vision returns coordinates in oriented space, matching our ciImage now
             let imageSize = ciImage.extent.size
             let faceRect = VNImageRectForNormalizedRect(
                 boundingBox,
@@ -99,12 +103,13 @@ class FaceBlurringService {
             }
         }
         
-        // Convert back to UIImage
+        // Convert back to UIImage with correct orientation
         guard let outputCGImage = context.createCGImage(ciImage, from: ciImage.extent) else {
             throw FaceBlurError.processingFailed
         }
         
-        return UIImage(cgImage: outputCGImage, scale: image.scale, orientation: image.imageOrientation)
+        // The orientation is already applied in the cgImage, so use .up
+        return UIImage(cgImage: outputCGImage, scale: image.scale, orientation: .up)
     }
     
     // MARK: - Video Frame Blurring
@@ -170,7 +175,8 @@ class FaceBlurringService {
         case .gaussian:
             guard let blurFilter = CIFilter(name: "CIGaussianBlur") else { return nil }
             blurFilter.setValue(faceImage, forKey: kCIInputImageKey)
-            blurFilter.setValue(radius, forKey: kCIInputRadiusKey)
+            // Increase blur strength by 1.5x
+            blurFilter.setValue(radius * 1.5, forKey: kCIInputRadiusKey)
             
             guard let blurredFace = blurFilter.outputImage?.cropped(to: faceImage.extent) else { return nil }
             return blurredFace.composited(over: image)
@@ -178,7 +184,8 @@ class FaceBlurringService {
         case .pixelated:
             guard let pixellateFilter = CIFilter(name: "CIPixellate") else { return nil }
             pixellateFilter.setValue(faceImage, forKey: kCIInputImageKey)
-            pixellateFilter.setValue(max(radius, 8.0), forKey: kCIInputScaleKey)
+            // Increase pixelation scale by 2x for stronger effect
+            pixellateFilter.setValue(max(radius * 2, 16.0), forKey: kCIInputScaleKey)
             
             guard let pixellatedFace = pixellateFilter.outputImage?.cropped(to: faceImage.extent) else { return nil }
             return pixellatedFace.composited(over: image)
