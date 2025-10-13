@@ -12,6 +12,7 @@ import Vision
 import CoreML
 import CoreImage
 import OSLog
+import CoreLocation
 
 
 /// Manages live camera feed and real-time classification with multi-camera support
@@ -42,6 +43,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         let imageData: Data
         let result: ClassificationResult
         var thumbnail: UIImage? // For fast UI previews
+        var location: CLLocation? = nil
         
         static func == (lhs: LiveCameraViewModel.CaptureCandidate, rhs: LiveCameraViewModel.CaptureCandidate) -> Bool {
             lhs.id == rhs.id
@@ -68,6 +70,8 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     private let modelService = ModelService.shared
     private let faceBlurService = FaceBlurringService()
     private let hapticManager = HapticManager.shared
+    private let locationManager = CLLocationManager()
+    private var currentLocation: CLLocation? = nil
     
     // For low-res preview generation
     private var modelInputSize: CGSize = CGSize(width: 224, height: 224)
@@ -75,6 +79,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     
     override init() {
         super.init()
+        locationManager.delegate = self
         setupSessionAndOutputs()
         discoverDevicesAndSetInitialCamera()
         Task { @MainActor in
@@ -268,10 +273,12 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     
     func startSession() {
         processingQueue.async { self.session.startRunning() }
+        locationManager.startUpdatingLocation()
     }
     
     func stopSession() {
         session.stopRunning()
+        locationManager.stopUpdatingLocation()
         DispatchQueue.main.async {
             self.liveResults.removeAll()
             self.lowResPreviewImage = nil
@@ -297,7 +304,6 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         }
     }
     
-    @MainActor
     private func processLiveClassifications(for request: VNRequest, error: Error?) {
         guard error == nil, let observations = request.results as? [VNClassificationObservation] else { return }
 
@@ -324,6 +330,21 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         }
         self.shouldHighlight = highlight
     }
+    
+    func requestLocationAuthorization() {
+        locationManager.requestWhenInUseAuthorization()
+    }
+}
+
+// MARK: - CLLocationManagerDelegate
+extension LiveCameraViewModel: CLLocationManagerDelegate {
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        currentLocation = locations.last
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        Logger.bestShot.error("Location manager failed with error: \(error.localizedDescription)")
+    }
 }
 
 // MARK: - Camera Delegate Extensions
@@ -341,7 +362,7 @@ extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
                 
                 // Add the candidate on the main thread
                 DispatchQueue.main.async {
-                    let candidate = CaptureCandidate(imageData: imageData, result: result, thumbnail: thumbnail)
+                    let candidate = CaptureCandidate(imageData: imageData, result: result, thumbnail: thumbnail, location: self.currentLocation)
                     self.bestShotCandidates.append(candidate)
                     self.bestShotCandidateCount += 1
                     self.hapticManager.impact(.light)
@@ -353,7 +374,7 @@ extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
         
         // If not a best shot capture, it's a manual capture. Save it directly.
         hapticManager.impact(.heavy)
-        photoSaver.saveImageData(imageData)
+        photoSaver.saveImageData(imageData, location: currentLocation)
         
         // Trigger confirmation UI
         DispatchQueue.main.async {

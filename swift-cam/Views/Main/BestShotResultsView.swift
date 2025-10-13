@@ -65,8 +65,8 @@ struct BestShotResultsView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save Selected") {
-                        for data in selectedImageData {
-                            photoSaver.saveImageData(data)
+                        for candidate in candidates where selectedImageData.contains(candidate.imageData) {
+                            photoSaver.saveImageData(candidate.imageData, location: candidate.location)
                         }
                         onDismiss()
                     }

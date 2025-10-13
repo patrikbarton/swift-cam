@@ -284,6 +284,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "swift-cam/Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to classify objects in real-time.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app uses your location to tag photos with it.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app uses the photo library to classify objects in your photos.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -333,6 +334,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "swift-cam/Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to classify objects in real-time.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app uses your location to tag photos with it.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app uses the photo library to classify objects in your photos.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
