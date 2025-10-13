@@ -99,6 +99,7 @@ struct LiveCameraView: View {
             // Overlays
             countdownOverlay
             lowResPreviewOverlay
+            saveConfirmationOverlay
 
             // UI Controls
             VStack {
@@ -127,6 +128,7 @@ struct LiveCameraView: View {
 
                     countdownOverlay
                     lowResPreviewOverlay
+                    saveConfirmationOverlay
                     
                     VStack {
                         Spacer()
@@ -165,12 +167,7 @@ struct LiveCameraView: View {
 
             // Main Capture Button
             CaptureButton {
-                liveCameraManager.capturePhoto { image in
-                    if let image = image {
-                        Task { await cameraManager.classifyImage(image, applyFaceBlur: appStateViewModel.faceBlurringEnabled, blurStyle: appStateViewModel.blurStyle) }
-                    }
-                    handleDismiss()
-                }
+                liveCameraManager.capturePhotoAndSave()
             }
             .disabled(appStateViewModel.isAssistedCaptureEnabled && !liveCameraManager.shouldHighlight)
             .opacity((appStateViewModel.isAssistedCaptureEnabled && !liveCameraManager.shouldHighlight) ? 0.4 : 1.0)
@@ -235,6 +232,25 @@ struct LiveCameraView: View {
                     .transition(.opacity)
             }
             .ignoresSafeArea()
+        }
+    }
+
+    @ViewBuilder
+    private var saveConfirmationOverlay: some View {
+        if liveCameraManager.showSaveConfirmation {
+            VStack {
+                Spacer()
+                Text("Saved to Photos")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.black.opacity(0.6))
+                    .clipShape(Capsule())
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                Spacer()
+                    .frame(height: 150)
+            }
+            .animation(.spring(), value: liveCameraManager.showSaveConfirmation)
         }
     }
 

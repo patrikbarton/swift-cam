@@ -56,7 +56,8 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     let session = AVCaptureSession()
     private var photoOutput = AVCapturePhotoOutput()
     private var videoOutput = AVCaptureVideoDataOutput()
-    private var captureCompletion: ((UIImage?) -> Void)?
+    private let photoSaver = PhotoSaver()
+    @Published var showSaveConfirmation = false
     
     // Enhanced object tracking properties
     private var lastProcessingTime: Date = Date()
@@ -268,8 +269,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         }
     }
     
-    func capturePhoto(completion: @escaping (UIImage?) -> Void) {
-        self.captureCompletion = completion
+    func capturePhotoAndSave() {
         let settings = AVCapturePhotoSettings()
         self.photoOutput.capturePhoto(with: settings, delegate: self)
     }
@@ -280,10 +280,10 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         
         do {
             let blurred = try await faceBlurService.blurFaces(in: image, blurRadius: 20.0, blurStyle: blurStyle)
-            Logger.privacy.info("🔒 Face blurring applied to live capture")
+            Logger.bestShot.info("🔒 Face blurring applied to live capture")
             return blurred
         } catch {
-            Logger.privacy.warning("⚠️ Face blurring failed on live capture: \(error.localizedDescription)")
+            Logger.bestShot.warning("⚠️ Face blurring failed on live capture: \(error.localizedDescription)")
             return image
         }
     }
@@ -320,10 +320,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
 // MARK: - Camera Delegate Extensions
 extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        guard let imageData = photo.fileDataRepresentation() else {
-            captureCompletion?(nil)
-            return
-        }
+        guard let imageData = photo.fileDataRepresentation() else { return }
         
         // Check if this is a "Best Shot" capture
         if let result = pendingBestShotResult {
@@ -334,12 +331,15 @@ extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
             return // End here for best shot captures
         }
         
-        // If not a best shot capture, proceed with normal manual capture flow
-        let image = UIImage(data: imageData)
-        Task {
-            let processedImage = await applyFaceBlurIfNeeded(to: image!)
-            captureCompletion?(processedImage)
-            captureCompletion = nil
+        // If not a best shot capture, it's a manual capture. Save it directly.
+        photoSaver.saveImageData(imageData)
+        
+        // Trigger confirmation UI
+        DispatchQueue.main.async {
+            self.showSaveConfirmation = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.showSaveConfirmation = false
+            }
         }
     }
 }
