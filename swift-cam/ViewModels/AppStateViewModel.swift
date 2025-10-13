@@ -33,6 +33,12 @@ class AppStateViewModel: ObservableObject {
         }
     }
 
+    @Published var isAssistedCaptureEnabled: Bool = false {
+        didSet {
+            saveIsAssistedCaptureEnabled()
+        }
+    }
+
     @Published var bestShotDuration: Double = 10.0 {
         didSet {
             saveBestShotDuration()
@@ -49,12 +55,14 @@ class AppStateViewModel: ObservableObject {
     private let bestShotDurationKey = "bestShotDuration"
     private let selectedModelKey = "selectedModel"
     private let bestShotTargetLabelKey = "bestShotTargetLabel"
+    private let isAssistedCaptureEnabledKey = "isAssistedCaptureEnabled"
 
     init() {
         loadHighlightRules()
         loadBestShotDuration()
         loadSelectedModel()
         loadBestShotTargetLabel()
+        loadIsAssistedCaptureEnabled()
         
         Task {
             if AppConstants.preloadModels {
@@ -63,6 +71,14 @@ class AppStateViewModel: ObservableObject {
                 self.isLoading = false
             }
         }
+    }
+
+    private func loadIsAssistedCaptureEnabled() {
+        self.isAssistedCaptureEnabled = UserDefaults.standard.bool(forKey: isAssistedCaptureEnabledKey)
+    }
+
+    private func saveIsAssistedCaptureEnabled() {
+        UserDefaults.standard.set(isAssistedCaptureEnabled, forKey: isAssistedCaptureEnabledKey)
     }
 
     private func loadBestShotTargetLabel() {

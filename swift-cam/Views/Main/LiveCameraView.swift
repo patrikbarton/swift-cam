@@ -172,6 +172,8 @@ struct LiveCameraView: View {
                     handleDismiss()
                 }
             }
+            .disabled(appStateViewModel.isAssistedCaptureEnabled && !liveCameraManager.shouldHighlight)
+            .opacity((appStateViewModel.isAssistedCaptureEnabled && !liveCameraManager.shouldHighlight) ? 0.4 : 1.0)
 
             // Switch Camera Button (or other right-side control)
             Button(action: { liveCameraManager.switchCamera() }) {

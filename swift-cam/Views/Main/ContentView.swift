@@ -519,6 +519,14 @@ struct SettingsTabView: View {
                                     isOn: $appStateViewModel.fullScreenCamera,
                                     color: .appPrimary
                                 )
+
+                                CameraSettingToggleRow(
+                                    icon: "wand.and.stars",
+                                    title: "Assisted Capture",
+                                    description: "Only allow photo capture when a highlighted object is detected",
+                                    isOn: $appStateViewModel.isAssistedCaptureEnabled,
+                                    color: .yellow
+                                )
                                 
                                 CameraSettingToggleRow(
                                     icon: "face.smiling",
