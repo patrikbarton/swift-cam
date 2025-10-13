@@ -1,5 +1,5 @@
 //
-//  swift_camApp.swift
+//  SwiftCamApp.swift
 //  swift-cam
 //
 //  Created by Patrik Barton on 22.09.25.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct swift_camApp: App {
+struct SwiftCamApp: App {
     @StateObject private var appState = AppStateViewModel()
     
     var body: some Scene {

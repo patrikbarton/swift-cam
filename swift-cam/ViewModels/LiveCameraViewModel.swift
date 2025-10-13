@@ -15,7 +15,29 @@ import OSLog
 import CoreLocation
 
 
-/// Manages live camera feed and real-time classification with multi-camera support
+/// Manages live camera feed and real-time ML classification
+///
+/// This ViewModel coordinates the entire live camera experience, including:
+/// - Camera session management (multi-camera support)
+/// - Real-time object detection using Vision framework
+/// - Best Shot automatic capture sequence
+/// - Object highlighting based on custom rules
+/// - Assisted capture mode (only allow capture when target detected)
+/// - Face blurring for privacy protection
+///
+/// **Threading Architecture:**
+/// - Camera capture runs on background `processingQueue`
+/// - ML inference throttled to 0.5s intervals for performance
+/// - UI updates dispatched to main thread via `@MainActor`
+///
+/// **Usage:**
+/// ```swift
+/// @StateObject private var cameraVM = LiveCameraViewModel()
+/// 
+/// cameraVM.startSession()
+/// cameraVM.updateModel(to: .mobileNet)
+/// cameraVM.startBestShotSequence(duration: 10.0)
+/// ```
 class LiveCameraViewModel: NSObject, ObservableObject {
     @Published var liveResults: [ClassificationResult] = []
     @Published var isProcessing = false
@@ -215,6 +237,13 @@ class LiveCameraViewModel: NSObject, ObservableObject {
 
     // MARK: - Best Shot Sequence
     
+    /// Start Best Shot automatic capture sequence
+    /// 
+    /// Monitors live camera feed for the target object and automatically captures
+    /// high-resolution photos when detected with >80% confidence. Captures are
+    /// throttled to one per second to avoid duplicates.
+    ///
+    /// - Parameter duration: Length of capture sequence in seconds
     func startBestShotSequence(duration: Double) {
         guard !isBestShotSequenceActive else { return }
         

@@ -70,3 +70,5 @@ swift-cam/DeveloperSettings.xcconfig
 
 .gemini/
 gha-creds-*.json
+
+.MDs/

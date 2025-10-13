@@ -9,7 +9,23 @@ import SwiftUI
 import Combine
 import OSLog
 
-/// Manages app initialization state and model preloading
+/// Manages app initialization state, user preferences, and ML model preloading
+///
+/// This ViewModel serves as the central state manager for the application, handling:
+/// - App startup and model preloading during splash screen
+/// - User preferences (selected ML model, camera settings, privacy options)
+/// - Persistent storage of settings using UserDefaults
+///
+/// **Key Responsibilities:**
+/// - Preload all ML models during app startup for instant access
+/// - Persist and restore user settings across app launches
+/// - Manage highlight rules for live camera detection
+/// - Configure Best Shot capture parameters
+///
+/// **Usage:**
+/// ```swift
+/// @StateObject private var appState = AppStateViewModel()
+/// ```
 @MainActor
 class AppStateViewModel: ObservableObject {
     @Published var isLoading = true
@@ -73,10 +89,12 @@ class AppStateViewModel: ObservableObject {
         }
     }
 
+    /// Load all settings from UserDefaults
     private func loadIsAssistedCaptureEnabled() {
         self.isAssistedCaptureEnabled = UserDefaults.standard.bool(forKey: isAssistedCaptureEnabledKey)
     }
 
+    /// Save Assisted Capture setting to UserDefaults
     private func saveIsAssistedCaptureEnabled() {
         UserDefaults.standard.set(isAssistedCaptureEnabled, forKey: isAssistedCaptureEnabledKey)
     }
@@ -128,6 +146,8 @@ class AppStateViewModel: ObservableObject {
         }
     }
 
+    /// Preload all ML models during app startup
+    /// This ensures models are ready for instant use without first-time loading delays
     private func startPreloading() async {
         Logger.model.info("🚀 App starting - preloading pre-compiled ML models for optimal performance")
 

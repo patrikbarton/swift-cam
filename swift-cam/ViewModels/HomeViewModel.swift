@@ -12,7 +12,25 @@ import CoreML
 import OSLog
 
 /// Manages ML model loading, caching, and image classification
-/// Supports dynamic model switching with Neural Engine optimization
+///
+/// This ViewModel handles the "Home" tab functionality:
+/// - Loading and switching between ML models (MobileNet, ResNet, FastViT)
+/// - Classifying images from photo library
+/// - Managing model state and UI feedback
+/// - Verifying compute unit (Neural Engine) availability
+///
+/// **Model Lifecycle:**
+/// 1. Models are preloaded during app startup via `ModelService`
+/// 2. Switching models creates new Vision request with cached MLModel
+/// 3. Classification runs on background thread, results on main thread
+///
+/// **Usage:**
+/// ```swift
+/// @StateObject private var viewModel = HomeViewModel()
+/// 
+/// await viewModel.classifyImage(image, applyFaceBlur: true)
+/// await viewModel.updateModel(to: .resnet50)
+/// ```
 @MainActor
 class HomeViewModel: ObservableObject {
     @Published var capturedImage: UIImage?
@@ -45,6 +63,10 @@ class HomeViewModel: ObservableObject {
         await loadModel(.mobileNet)
     }
     
+    /// Load an ML model and create Vision classification request
+    ///
+    /// - Parameter modelType: The model to load (MobileNet, ResNet, or FastViT)
+    /// - Note: Models are cached by `ModelService` for instant switching
     func loadModel(_ modelType: MLModelType) async {
         ConditionalLogger.debug(Logger.model, "📥 Loading \(modelType.displayName)")
         
@@ -112,6 +134,13 @@ class HomeViewModel: ObservableObject {
         isCurrentlySwitching = false
     }
     
+    /// Classify an image using the current ML model
+    ///
+    /// - Parameters:
+    ///   - image: The UIImage to classify
+    ///   - applyFaceBlur: Whether to blur detected faces for privacy
+    ///   - blurStyle: Style of blur to apply (gaussian, pixelated, or black box)
+    /// - Note: Classification runs on background thread, updates published on main thread
     func classifyImage(_ image: UIImage, applyFaceBlur: Bool = false, blurStyle: BlurStyle = .gaussian) async {
         guard let classificationRequest = classificationRequest else {
             errorMessage = "Model not loaded"

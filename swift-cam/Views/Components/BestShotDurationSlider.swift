@@ -52,7 +52,7 @@ struct BestShotDurationSlider: View {
 }
 
 #Preview {
-    @State var duration: Double = 15.0
+    @Previewable @State var duration: Double = 15.0
     return BestShotDurationSlider(
         icon: "timer",
         title: "Best Shot Duration",

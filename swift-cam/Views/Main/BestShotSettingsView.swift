@@ -107,7 +107,7 @@ struct BestShotSettingsView: View {
 }
 
 #Preview {
-    @State var label = "cat"
+    @Previewable @State var label = "cat"
     let labels = ["cat", "dog", "bird", "car", "bicycle", "boat"]
     
     return NavigationStack {
