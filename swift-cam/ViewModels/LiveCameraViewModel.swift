@@ -30,6 +30,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     // Best Shot Properties
     @Published var isBestShotSequenceActive = false
     @Published var bestShotCountdown: Double = 0
+    @Published var bestShotCandidateCount: Int = 0
     @Published var topCandidates: [CaptureCandidate] = []
     private var bestShotCandidates: [CaptureCandidate] = []
     private var sequenceTimer: Timer?
@@ -68,6 +69,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     private var classificationRequest: VNCoreMLRequest?
     private let modelService = ModelService.shared
     private let faceBlurService = FaceBlurringService()
+    private let hapticManager = HapticManager.shared
     
     // For low-res preview generation
     private var modelInputSize: CGSize = CGSize(width: 224, height: 224)
@@ -213,10 +215,12 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     func startBestShotSequence(duration: Double) {
         guard !isBestShotSequenceActive else { return }
         
+        hapticManager.impact(.medium)
         Logger.bestShot.info("Starting Best Shot sequence for \(duration)s")
         isBestShotSequenceActive = true
         bestShotCountdown = duration
         bestShotCandidates.removeAll()
+        bestShotCandidateCount = 0
         
         // Invalidate any existing timer
         sequenceTimer?.invalidate()
@@ -227,6 +231,12 @@ class LiveCameraViewModel: NSObject, ObservableObject {
             
             DispatchQueue.main.async {
                 self.bestShotCountdown -= 1
+                
+                // Add haptic feedback for the last 3 seconds
+                if self.bestShotCountdown <= 3 && self.bestShotCountdown > 0 {
+                    self.hapticManager.impact(.medium)
+                }
+
                 if self.bestShotCountdown <= 0 {
                     self.stopBestShotSequence()
                 }
@@ -237,6 +247,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     private func stopBestShotSequence() {
         guard isBestShotSequenceActive else { return }
         
+        hapticManager.generate(.success)
         Logger.bestShot.info("Finished Best Shot sequence.")
         isBestShotSequenceActive = false
         sequenceTimer?.invalidate()
@@ -324,14 +335,17 @@ extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
         
         // Check if this is a "Best Shot" capture
         if let result = pendingBestShotResult {
+            hapticManager.impact(.light)
             let candidate = CaptureCandidate(imageData: imageData, result: result)
             bestShotCandidates.append(candidate)
+            bestShotCandidateCount += 1
             Logger.bestShot.info("Successfully captured hi-res candidate for \(result.identifier).")
             pendingBestShotResult = nil // Reset pending result
             return // End here for best shot captures
         }
         
         // If not a best shot capture, it's a manual capture. Save it directly.
+        hapticManager.impact(.heavy)
         photoSaver.saveImageData(imageData)
         
         // Trigger confirmation UI

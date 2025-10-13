@@ -208,12 +208,20 @@ struct LiveCameraView: View {
     private var countdownOverlay: some View {
         if liveCameraManager.isBestShotSequenceActive {
             ZStack {
-                Circle()
-                    .fill(Color.black.opacity(0.6))
-                    .frame(width: 120, height: 120)
-                Text("\(Int(liveCameraManager.bestShotCountdown))")
-                    .font(.system(size: 60, weight: .bold, design: .monospaced))
-                    .foregroundColor(.white)
+                Color.black.opacity(0.5).ignoresSafeArea()
+                
+                VStack(spacing: 16) {
+                    Text("\(Int(liveCameraManager.bestShotCountdown))")
+                        .font(.system(size: 80, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                    
+                    VStack {
+                        Text("Looking for: \(appStateViewModel.bestShotTargetLabel.capitalized)")
+                        Text("Candidates found: \(liveCameraManager.bestShotCandidateCount)")
+                    }
+                    .font(.title3)
+                    .foregroundColor(.white.opacity(0.8))
+                }
             }
             .transition(.opacity)
         }

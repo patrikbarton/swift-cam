@@ -438,6 +438,7 @@ struct CameraTabView: View {
 struct SettingsTabView: View {
     @ObservedObject var viewModel: HomeViewModel
     @ObservedObject var appStateViewModel: AppStateViewModel
+    private let hapticManager = HapticManager.shared
     
     var body: some View {
         NavigationStack {
@@ -489,6 +490,7 @@ struct SettingsTabView: View {
                                         isSelected: appStateViewModel.selectedModel == model,
                                         viewModel: viewModel
                                     ) {
+                                        hapticManager.impact(.light)
                                         appStateViewModel.selectedModel = model
                                         Task {
                                             await viewModel.updateModel(to: model)

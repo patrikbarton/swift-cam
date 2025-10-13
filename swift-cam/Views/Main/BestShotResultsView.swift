@@ -3,7 +3,7 @@
 //  BestShotResultsView.swift
 //  swift-cam
 //
-//  Created by Joshua Noel on 10/13/25.
+//  Created by Joshua Noeldeke on 10/13/25.
 //
 
 import SwiftUI
