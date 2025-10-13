@@ -14,7 +14,7 @@ import OSLog
 /// Manages ML model loading, caching, and image classification
 /// Supports dynamic model switching with Neural Engine optimization
 @MainActor
-class CameraViewModel: ObservableObject {
+class HomeViewModel: ObservableObject {
     @Published var capturedImage: UIImage?
     @Published var classificationResults: [ClassificationResult] = []
     @Published var isAnalyzing = false

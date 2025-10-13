@@ -11,7 +11,7 @@ import OSLog
 
 struct ContentView: View {
     @State private var selectedTab = 0 // Default to Home
-    @StateObject private var cameraViewModel = CameraViewModel()
+    @StateObject private var cameraViewModel = HomeViewModel()
     @StateObject private var appStateViewModel = AppStateViewModel()
     
     var body: some View {
@@ -44,7 +44,7 @@ struct ContentView: View {
 
 // MARK: - Home Tab View (Photo Library & Results)
 struct HomeTabView: View {
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: HomeViewModel
     @ObservedObject var appStateViewModel: AppStateViewModel
     @State private var selectedImage: PhotosPickerItem? = nil
     
@@ -413,7 +413,7 @@ struct FeatureCard: View {
 
 // MARK: - Camera Tab View (Auto-open Live Camera)
 struct CameraTabView: View {
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: HomeViewModel
     @Binding var selectedTab: Int
     @ObservedObject var appStateViewModel: AppStateViewModel
     @StateObject private var liveCameraManager = LiveCameraViewModel()
@@ -436,7 +436,7 @@ struct CameraTabView: View {
 
 // MARK: - Settings Tab View
 struct SettingsTabView: View {
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: HomeViewModel
     @ObservedObject var appStateViewModel: AppStateViewModel
     
     var body: some View {
@@ -753,7 +753,7 @@ struct SettingsTabView: View {
 struct ModelSettingRow: View {
     let model: MLModelType
     let isSelected: Bool
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: HomeViewModel
     let onSelect: () -> Void
     
     var body: some View {
@@ -951,7 +951,7 @@ struct BlurStyleRow: View {
 
 // MARK: - Status Text View
 private struct StatusTextView: View {
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: HomeViewModel
     let selectedModel: MLModelType
     
     var body: some View {
@@ -1028,7 +1028,7 @@ private struct StatusTextView: View {
 
 // MARK: - Model Selector View
 private struct ModelSelectorView: View {
-    @ObservedObject var viewModel: CameraViewModel
+    @ObservedObject var viewModel: HomeViewModel
     @Binding var selectedModel: MLModelType
     
     var body: some View {

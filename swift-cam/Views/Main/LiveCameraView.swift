@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct LiveCameraView: View {
-    @ObservedObject var cameraManager: CameraViewModel
+    @ObservedObject var cameraManager: HomeViewModel
     let selectedModel: MLModelType
     @ObservedObject var appStateViewModel: AppStateViewModel // Observe changes instead of copying value
     @Environment(\.dismiss) private var dismiss
@@ -18,7 +18,7 @@ struct LiveCameraView: View {
     @State private var showLowResPreview = false
     @State private var showBestShotResults = false
 
-    init(cameraManager: CameraViewModel, selectedModel: MLModelType, appStateViewModel: AppStateViewModel, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel(), onCustomDismiss: (() -> Void)? = nil) {
+    init(cameraManager: HomeViewModel, selectedModel: MLModelType, appStateViewModel: AppStateViewModel, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel(), onCustomDismiss: (() -> Void)? = nil) {
         self.cameraManager = cameraManager
         self.selectedModel = selectedModel
         self.appStateViewModel = appStateViewModel
@@ -265,7 +265,7 @@ struct LiveCameraView: View {
 }
 
 #if DEBUG
-class MockCameraViewModel: CameraViewModel {}
+class MockCameraViewModel: HomeViewModel {}
 
 class MockLiveCameraViewModelForPreview: LiveCameraViewModel {
     override func startSession() {
