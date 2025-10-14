@@ -95,11 +95,70 @@ To ensure the app is fast and responsive, especially when switching between AI m
 3.  **Open `swift-cam.xcodeproj` in Xcode** and build!
 
 
-## 📂 Project Highlights (For Presentation)
+## 📂 Project Highlights: A Code-Level Look
 
-If you want to showcase the core logic of the project, these files are the best place to start:
+This section dives into specific files that are central to the project's architecture and contain its most interesting technical implementations. 
 
--   `LiveCameraViewModel.swift`: See the `captureOutput` delegate method for the entry point of our real-time frame processing. Notice how it uses `Task` and `await MainActor.run` to safely interact with the UI and services from a background thread.
--   `VisionService.swift`: This **Actor** is the heart of the ML implementation. Look at `performClassification` to see the streamlined Vision pipeline and `getClassificationRequest` to see the efficient caching strategy.
--   `Logger+Extensions.swift`: Shows how to create app-wide, thread-safe loggers using the `nonisolated` keyword.
--   `SettingsTabView.swift`: A great example of a complex, data-driven settings screen built entirely in SwiftUI and bound to a central state object (`AppStateViewModel`).
+### 1. `LiveCameraViewModel.swift`
+
+**This is the brain of the entire live camera experience.** It's a perfect example of a complex `ObservableObject` that manages real-time data streams while safely interacting with the UI.
+
+-   **What to look for:** The `AVCaptureVideoDataOutputSampleBufferDelegate` extension at the bottom of the file.
+-   **The `captureOutput(...)` method** is the entry point for every frame that comes from the camera. It runs on a `nonisolated` background queue provided by AVFoundation.
+-   **Concurrency Bridge**: Inside `captureOutput`, a `Task` is created. This is the critical bridge from the old, delegate-based world to the new world of Swift Concurrency. 
+-   **Thread-Safe State Checking**: The first thing the `Task` does is `await MainActor.run { ... }` to hop to the main thread and safely check UI state like `isProcessing` and the throttling timer. This prevents data races.
+-   **Delegation of Work**: After a frame is approved for processing, the ViewModel doesn't do the heavy lifting itself. It delegates the work to other services in parallel:
+    -   It calls `visionService.performClassification(...)` to run the ML model.
+    -   It calls `updateUIPreviews(...)` to handle the face blur and low-res preview generation.
+-   **Publishing Results**: Once `visionService` returns results, the ViewModel hops back to the main thread with `await MainActor.run { ... }` to update the `@Published var liveResults`, which the SwiftUI view is subscribed to.
+
+### 2. `VisionService.swift`
+
+**This is the heart of the AI engine and the core of our performance strategy.** It's implemented as a Swift `actor` to guarantee that its internal state (the model caches) is accessed in a thread-safe manner.
+
+-   **What to look for:** The `performClassification(...)` public function and the `getClassificationRequest(...)` private function.
+-   **Clean API**: The `performClassification` function provides a simple, `async` API to the rest of the app. It hides all the underlying complexity of the Vision framework.
+-   **The Caching Strategy**: The `getClassificationRequest` method demonstrates the crucial performance optimization. It maintains two dictionaries:
+    1.  `visionModelCache`: Caches the `VNCoreMLModel`, which is the compiled model that's expensive to load from disk.
+    2.  `requestCache`: Caches the `VNCoreMLRequest`. This was the key to solving the ANE power-cycling issue, as it prevents the system from re-configuring the hardware pipeline for every single frame.
+
+### 3. `AppStateViewModel.swift`
+
+**This is the app's single source of truth for all user settings.** It demonstrates a clean pattern for managing and persisting global state.
+
+-   **What to look for:** The `@Published` properties with `didSet` observers.
+-   **Automatic Persistence**: When a user changes a setting in the UI (like enabling face blur), the `didSet` property observer is triggered. This observer immediately writes the new value to `UserDefaults`.
+    ```swift
+    @Published var faceBlurringEnabled: Bool = false {
+        didSet { UserDefaults.standard.set(faceBlurringEnabled, forKey: Keys.faceBlur) }
+    }
+    ```
+-   **Loading on Init**: In the `init()` method, the ViewModel loads all the saved values from `UserDefaults`, ensuring user preferences are restored every time the app launches.
+
+### 4. `FaceBlurringService.swift`
+
+**A great, self-contained example of combining multiple Apple frameworks (Vision and Core Image).**
+
+-   **What to look for:** The `blurFaces(...)` method.
+-   **The Pipeline**:
+    1.  It creates a `VNDetectFaceRectanglesRequest` (a Vision request specifically for finding faces).
+    2.  It runs this request on the input image.
+    3.  It iterates through the results (`VNFaceObservation`).
+    4.  For each face's bounding box, it creates and applies a `CIFilter` (like `CIPixellate` or `CIGaussianBlur`) to that specific region of the image.
+    5.  It composites the blurred face regions back onto the original image and returns the result.
+
+### 5. `SettingsTabView.swift`
+
+**This file shows how a complex, data-driven UI is built in SwiftUI.**
+
+-   **What to look for:** How it uses `@ObservedObject var appStateViewModel: AppStateViewModel`.
+-   **Declarative UI**: The view is a direct reflection of the state in `AppStateViewModel`. There is no manual code to update the UI.
+-   **Direct Binding**: SwiftUI components are bound directly to the ViewModel's `@Published` properties. For example, the "Blur Faces" toggle is bound with `$appStateViewModel.faceBlurringEnabled`. When the user taps the toggle, the ViewModel's property is updated directly, which in turn triggers the `didSet` to save the value to `UserDefaults`.
+
+### 6. `Logger+Extensions.swift`
+
+**A simple but powerful utility that was key to solving our concurrency warnings.**
+
+-   **What to look for:** The `nonisolated static let` properties.
+-   **The Problem**: A standard `static let logger = Logger(...)` is isolated to the Main Actor by default. Calling it from a background thread (like our camera queue) would produce a compiler warning.
+-   **The Solution**: By declaring the logger as `nonisolated`, we tell the Swift compiler that it is safe to use from any thread or actor. Since Apple's `Logger` is designed to be thread-safe, this is a correct and elegant way to enable unified logging across the entire app.
