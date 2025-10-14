@@ -1,3 +1,10 @@
+//
+//  FaceBlurError.swift
+//  swift-cam
+//
+//  Error types for Face Blurring
+//
+
 import Foundation
 
 /// Errors that can occur during face blurring

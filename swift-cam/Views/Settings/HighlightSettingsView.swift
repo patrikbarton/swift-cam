@@ -54,7 +54,7 @@ struct HighlightSettingsView: View {
     }
     
     private var isNewLabelValid: Bool {
-        !newLabel.isEmpty && modelLabels.contains(newLabel.lowercased())
+        !newLabel.isEmpty && modelLabels.contains(where: { $0.caseInsensitiveCompare(newLabel) == .orderedSame })
     }
     
     private var canAddRule: Bool {
