@@ -150,7 +150,8 @@
 /* Begin XCBuildConfiguration section */
 		C95FB8E62E81929500F47490 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53A7FDBCCF20439E9415C346 /* swift-cam/DeveloperSettings.xcconfig */;
+			baseConfigurationReferenceAnchor = C95FB8DF2E81929400F47490 /* swift-cam */;
+			baseConfigurationReferenceRelativePath = DeveloperSettings.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -213,7 +214,8 @@
 		};
 		C95FB8E72E81929500F47490 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53A7FDBCCF20439E9415C346 /* swift-cam/DeveloperSettings.xcconfig */;
+			baseConfigurationReferenceAnchor = C95FB8DF2E81929400F47490 /* swift-cam */;
+			baseConfigurationReferenceRelativePath = DeveloperSettings.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -268,12 +270,13 @@
 		};
 		C95FB8E92E81929500F47490 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53A7FDBCCF20439E9415C346 /* swift-cam/DeveloperSettings.xcconfig */;
+			baseConfigurationReferenceAnchor = C95FB8DF2E81929400F47490 /* swift-cam */;
+			baseConfigurationReferenceRelativePath = DeveloperSettings.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8PX5483L5H;
+				DEVELOPMENT_TEAM = RS5ZRK5X46;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -281,6 +284,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "swift-cam/Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to classify objects in real-time.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app uses your location to tag photos with it.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app uses the photo library to classify objects in your photos.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -297,7 +301,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.patrik.barton.swift-cam";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.joshuanoeldeke.swift-cam";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -316,12 +320,13 @@
 		};
 		C95FB8EA2E81929500F47490 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53A7FDBCCF20439E9415C346 /* swift-cam/DeveloperSettings.xcconfig */;
+			baseConfigurationReferenceAnchor = C95FB8DF2E81929400F47490 /* swift-cam */;
+			baseConfigurationReferenceRelativePath = DeveloperSettings.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8PX5483L5H;
+				DEVELOPMENT_TEAM = RS5ZRK5X46;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -329,6 +334,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "swift-cam/Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "This app uses the camera to classify objects in real-time.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app uses your location to tag photos with it.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app uses the photo library to classify objects in your photos.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -345,7 +351,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.patrik.barton.swift-cam";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.joshuanoeldeke.swift-cam";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;

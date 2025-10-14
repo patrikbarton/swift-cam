@@ -2,13 +2,16 @@
 
 AI-powered object recognition app for iOS using Core ML.
 
-## Features
+## ✨ Features
 
-- 🤖 **Multiple ML Models**: MobileNet V2, ResNet-50, and FastViT
-- 📷 **Live Camera**: Real-time object detection
-- 🖼️ **Photo Library**: Analyze saved images
-- ⚡ **Fast Preloading**: Models loaded during splash screen
-- 🎨 **Modern UI**: Clean, Apple-style interface
+-   🤖 **Multiple ML Models**: Switch between MobileNetV2, ResNet-50, and FastViT.
+-   📷 **Live Object Highlighting**: Get a visual confirmation with a green border when a desired object is in frame.
+-   🎯 **Best Shot Mode**: Let the AI automatically capture high-resolution photos when it detects a specific object over a set period.
+-   💡 **Assisted Capture**: A semi-automatic mode that only enables the shutter when a highlighted object is detected, helping you take perfectly-timed photos.
+-   🖼️ **Photo Library Analysis**: Analyze any image from your photo library.
+-   ⚙️ **Rich Settings**: All AI-assisted features are fully configurable in the app's settings menu.
+-   💾 **Persistent Choices**: Your preferred model and settings are saved and restored automatically.
+-   🔒 **Privacy Focused**: Includes an option to automatically blur faces in photos.
 
 ## 🚀 Getting Started
 
@@ -61,13 +64,31 @@ git pull
 
 ## 🏗️ Architecture
 
+This app uses a modern MVVM-inspired architecture designed for SwiftUI.
+
+-   **Views**: The UI is built with pure SwiftUI. `ContentView` is the entry point, containing a `TabView` for the main sections.
+-   **ViewModels**:
+    -   `AppStateViewModel`: The single source of truth for global UI state and user-configurable settings. All settings are persisted to `UserDefaults`.
+    -   `LiveCameraViewModel`: Manages the entire live camera session, including device management, running the Vision ML model, and implementing all AI-assisted features (Highlighting, Best Shot, Assisted Capture).
+    -   `HomeViewModel`: Manages the state for the "Home" tab, specifically the logic for picking and analyzing an image from the user's Photo Library.
+-   **Services**:
+    -   `ModelService`: A singleton responsible for efficiently loading and caching Core ML models and their class labels.
+    -   `FaceBlurringService`: A utility service for detecting and blurring faces in images.
+
 ```
 swift-cam/
-├── ModelPreloader.swift      # Preloads ML models at launch
-├── SplashScreenView.swift    # Splash with progress tracking
-├── ContentView.swift         # Main app UI and logic
-├── swift_camApp.swift        # App entry point
-└── *.mlmodel[c]             # Core ML models
+├── Views/
+│   ├── Main/              # Main screens (ContentView, LiveCameraView)
+│   └── Components/        # Reusable UI components
+├── ViewModels/
+│   ├── AppStateViewModel.swift
+│   ├── LiveCameraViewModel.swift
+│   └── HomeViewModel.swift
+├── Services/
+│   ├── ModelService.swift
+│   └── FaceBlurringService.swift
+├── Models/                # Simple data structures
+└── Utilities/             # Helpers and extensions
 ```
 
 ## 🤝 Contributing

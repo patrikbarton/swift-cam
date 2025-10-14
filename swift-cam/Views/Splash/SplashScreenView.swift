@@ -2,16 +2,51 @@
 //  SplashScreenView.swift
 //  swift-cam
 //
-//  Startup splash screen that preloads ML models
+//  A view shown at app startup during initial model preloading.
 //
 
 import SwiftUI
 
+/// A splash screen that provides visual feedback during the app's initial model preloading sequence.
+///
+/// This view is displayed by the root `SwiftCamApp` while the `AppStateViewModel` is
+/// in its `isLoading` state. It features entrance animations and a real-time progress
+/// bar that reflects the model loading progress.
+///
+/// **UI Layout:**
+/// ```
+/// ┌───────────────────────────┐
+/// │                           │
+/// │         [App Logo]        │
+/// │                           │
+/// │          AI Vision          │
+/// │   Intelligent Recognition   │
+/// │                           │
+/// │             o             │
+/// │      Loading Model...     │
+/// │      [––––––––––––––]     │
+/// │                           │
+/// └───────────────────────────┘
+/// ```
+///
+/// **State & Animation:**
+/// - Observes `AppStateViewModel` from the environment to get `loadingProgress`, `currentModelNumber`, and `totalModels`.
+/// - Uses local `@State` variables (`scale`, `opacity`) to drive a fade-and-scale entrance animation when the view appears.
+/// - The root `SwiftCamApp` view automatically removes this view from the hierarchy when `appState.isLoading` becomes `false`.
 struct SplashScreenView: View {
+    
+    // MARK: - Environment
+    
+    /// App state providing loading progress
     @EnvironmentObject var appState: AppStateViewModel
+    
+    // MARK: - Animation State
+    
     @State private var scale: CGFloat = 0.8
     @State private var opacity: Double = 0.0
     @State private var showTagline = false
+    
+    // MARK: - Body
     
     var body: some View {
         ZStack {
