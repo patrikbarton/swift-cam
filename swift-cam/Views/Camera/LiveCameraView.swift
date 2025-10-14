@@ -143,10 +143,6 @@ struct LiveCameraView: View {
             liveCameraManager.highlightRules = appStateViewModel.highlightRules // Set initial rules
             liveCameraManager.bestShotTargetLabel = appStateViewModel.bestShotTargetLabel // Set initial target
             liveCameraManager.bestShotConfidenceThreshold = appStateViewModel.bestShotConfidenceThreshold // Set initial threshold
-            liveCameraManager.startSession()
-        }
-        .onDisappear {
-            liveCameraManager.stopSession()
         }
         .onChange(of: appStateViewModel.faceBlurringEnabled) { _, newValue in
             liveCameraManager.faceBlurringEnabled = newValue

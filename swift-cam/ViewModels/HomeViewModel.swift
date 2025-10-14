@@ -151,7 +151,7 @@ class HomeViewModel: ObservableObject {
         classificationResults = []
         errorMessage = nil
         
-        // Apply face blurring if enabled
+        // The face blur service is already async, so it's non-blocking.
         var processedImage = image
         if applyFaceBlur {
             do {
@@ -159,7 +159,6 @@ class HomeViewModel: ObservableObject {
                 Logger.privacy.info("🔒 Face blurring applied to captured image")
             } catch {
                 Logger.privacy.warning("⚠️ Face blurring failed: \(error.localizedDescription)")
-                // Continue with original image if blurring fails
             }
         }
         
@@ -171,31 +170,50 @@ class HomeViewModel: ObservableObject {
             return
         }
         
-        let handler = VNImageRequestHandler(
-            cgImage: cgImage,
-            orientation: processedImage.imageOrientation.cgImagePropertyOrientation
-        )
+        // Read the orientation value here, while still on the main actor.
+        let orientation = image.imageOrientation.cgImagePropertyOrientation
         
-        do {
-            try handler.perform([classificationRequest])
-            guard let observations = classificationRequest.results as? [VNClassificationObservation] else {
-                errorMessage = "Unable to classify image"
-                isAnalyzing = false
-                return
-            }
+        // Detach a new Task to perform the blocking Vision request on a background thread.
+        Task.detached(priority: .userInitiated) {
+            let handler = VNImageRequestHandler(
+                cgImage: cgImage,
+                orientation: orientation // Use the captured value
+            )
             
-            classificationResults = observations
-                .prefix(AppConstants.maxClassificationResults)
-                .map { observation in
-                    ClassificationResult(
-                        identifier: observation.identifier,
-                        confidence: Double(observation.confidence)
-                    )
+            do {
+                // This is the blocking call that is now safely on a background thread.
+                try handler.perform([classificationRequest])
+                
+                guard let observations = classificationRequest.results as? [VNClassificationObservation] else {
+                    await MainActor.run {
+                        self.errorMessage = "Unable to classify image"
+                        self.isAnalyzing = false
+                    }
+                    return
                 }
-            isAnalyzing = false
-        } catch {
-            isAnalyzing = false
-            errorMessage = "Classification failed: \(error.localizedDescription)"
+                
+                let results = observations
+                    .prefix(AppConstants.maxClassificationResults)
+                    .map { observation in
+                        ClassificationResult(
+                            identifier: observation.identifier,
+                            confidence: Double(observation.confidence)
+                        )
+                    }
+                
+                // Hop back to the main thread to publish the results.
+                await MainActor.run {
+                    self.classificationResults = results
+                    self.isAnalyzing = false
+                }
+                
+            } catch {
+                // Hop back to the main thread to publish the error.
+                await MainActor.run {
+                    self.errorMessage = "Classification failed: \(error.localizedDescription)"
+                    self.isAnalyzing = false
+                }
+            }
         }
     }
     

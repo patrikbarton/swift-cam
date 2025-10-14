@@ -15,3 +15,18 @@ struct ScaleButtonStyle: ButtonStyle {
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
+
+#Preview {
+    Button(action: {}) {
+        Text("Press Me")
+            .font(.title)
+            .fontWeight(.bold)
+            .foregroundStyle(.white)
+            .padding()
+            .background(Color.blue)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+    .buttonStyle(ScaleButtonStyle())
+    .padding(50)
+    .background(Color.gray)
+}

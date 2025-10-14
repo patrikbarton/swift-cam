@@ -170,17 +170,22 @@ struct ImageCandidateRow: View {
     }
 }
 
-//#if DEBUG
-//// MARK: - Preview
-//#Preview {
-//    // Create some dummy data for the preview
-//    let dummyResult = ClassificationResult(identifier: "Golden Retriever", confidence: 0.92)
-//    let dummyImage = UIImage(systemName: "photo")!
-//    let candidates = [
-//        LiveCameraViewModel.CaptureCandidate(image: dummyImage, result: dummyResult),
-//        LiveCameraViewModel.CaptureCandidate(image: UIImage(systemName: "photo.fill")!, result: ClassificationResult(identifier: "Labrador", confidence: 0.88))
-//    ]
-//    
-//    return BestShotResultsView(candidates: candidates, onDismiss: {})
-//}
-//#endif
+#if DEBUG
+// MARK: - Preview
+#Preview {
+    // Create some dummy data for the preview
+    let dummyResult1 = ClassificationResult(identifier: "Golden Retriever", confidence: 0.92)
+    let dummyResult2 = ClassificationResult(identifier: "Labrador", confidence: 0.88)
+    
+    // Create a placeholder UIImage for the thumbnail
+    let placeholderImage = UIImage(systemName: "photo")!
+    
+    // Create mock candidate data
+    let candidates = [
+        LiveCameraViewModel.CaptureCandidate(imageData: Data(), result: dummyResult1, thumbnail: placeholderImage, location: nil),
+        LiveCameraViewModel.CaptureCandidate(imageData: Data(), result: dummyResult2, thumbnail: UIImage(systemName: "photo.fill")!, location: nil)
+    ]
+    
+    return BestShotResultsView(candidates: candidates, onDismiss: {})
+}
+#endif

@@ -129,15 +129,16 @@ struct SettingsTabView: View {
     
     private var modelSelectionSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("ML Model Selection")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 24)
-            
-            Text("Choose the AI model for image classification")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white.opacity(0.7))
-                .padding(.horizontal, 24)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("ML Model Selection")
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+
+                Text("Choose the AI model for image classification")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .padding(.horizontal, 24)
             
             VStack(spacing: 12) {
                 ForEach(MLModelType.allCases) { model in
@@ -148,7 +149,7 @@ struct SettingsTabView: View {
                     ) {
                         hapticManager.impact(.light)
                         appStateViewModel.selectedModel = model
-                        Task {
+                        Task.detached(priority: .userInitiated) {
                             await viewModel.updateModel(to: model)
                         }
                     }
@@ -438,7 +439,7 @@ struct SettingsTabView: View {
     private var systemInfoSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("System Info")
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 24)
             
@@ -464,34 +465,93 @@ struct SettingsTabView: View {
     private var appInfoSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("About")
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 24)
             
-            VStack(alignment: .leading, spacing: 12) {
-                Text("AI Vision")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                
-                Text("A powerful real-time object detection app using CoreML and Vision framework.")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
-                
-                Divider()
-                    .background(.white.opacity(0.3))
-                
-                HStack {
-                    Text("Version")
-                        .foregroundStyle(.white.opacity(0.7))
-                    Spacer()
-                    Text("1.0.0")
-                        .foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 16) {
+                // App Icon and Name (Optimized)
+                HStack(spacing: 16) {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [Color.appAccent.opacity(0.3), Color.appAccent.opacity(0.1), Color.clear],
+                                center: .center,
+                                startRadius: 20,
+                                endRadius: 34
+                            )
+                        )
+                        .frame(width: 68, height: 68)
+                        .overlay(
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.appAccent, Color.appSecondary],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 60, height: 60)
+                        )
+                        .overlay(
+                            Circle()
+                                .fill(.thinMaterial.opacity(0.3))
+                                .frame(width: 60, height: 60)
+                        )
+                        .overlay(
+                            Image(systemName: "camera.metering.center.weighted")
+                                .font(.system(size: 28, weight: .semibold))
+                                .foregroundStyle(.white)
+                        )
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("AI Vision")
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+
+                        Text("Version 1.0.0")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
                 }
-                .font(.subheadline)
+                
+                // Divider
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.3), Color.white.opacity(0.1)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(height: 1)
+                
+                // Description
+                Text("A powerful real-time object detection app using CoreML and Vision framework.")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineSpacing(4)
             }
             .padding(20)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.05), Color.white.opacity(0.01)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+            )
+            .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
             .padding(.horizontal, 24)
         }
     }

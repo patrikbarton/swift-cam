@@ -65,3 +65,11 @@ struct CameraPreviewView: UIViewRepresentable {
     }
 }
 
+#Preview {
+    // Note: The camera feed is not available in SwiftUI previews.
+    // This will just render the black background of the view.
+    CameraPreviewView(session: AVCaptureSession())
+        .frame(width: 300, height: 300)
+        .border(Color.red, width: 2)
+}
+

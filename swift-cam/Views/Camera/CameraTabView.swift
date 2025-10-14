@@ -46,6 +46,8 @@ struct CameraTabView: View {
                 selectedTab = 0
             }
         )
+        .onAppear(perform: liveCameraManager.startSession)
+        .onDisappear(perform: liveCameraManager.stopSession)
         .ignoresSafeArea(.all, edges: .top) // Full screen camera but tab bar visible
     }
 }
