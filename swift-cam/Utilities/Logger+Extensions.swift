@@ -14,22 +14,25 @@ extension Logger {
     private static var subsystem = Bundle.main.bundleIdentifier ?? "com.swift-cam"
     
     /// UI-related logging
-    static let ui = Logger(subsystem: subsystem, category: "UI")
+    nonisolated static let ui = Logger(subsystem: subsystem, category: "UI")
     
     /// ML Model management logging
-    static let model = Logger(subsystem: subsystem, category: "Model")
+    nonisolated static let model = Logger(subsystem: subsystem, category: "Model")
     
     /// Performance and inference logging
-    static let performance = Logger(subsystem: subsystem, category: "Performance")
+    nonisolated static let performance = Logger(subsystem: subsystem, category: "Performance")
     
     /// Image processing logging
-    static let image = Logger(subsystem: subsystem, category: "Image")
+    nonisolated static let image = Logger(subsystem: subsystem, category: "Image")
     
     /// Camera setup logging
-    static let cameraSetup = Logger(subsystem: subsystem, category: "CameraSetup")
+    nonisolated static let cameraSetup = Logger(subsystem: subsystem, category: "CameraSetup")
     
     /// BestShot logging
-    static let bestShot = Logger(subsystem: subsystem, category: "BestShot")
+    nonisolated static let bestShot = Logger(subsystem: subsystem, category: "BestShot")
+
+    /// Privacy-related logging (face detection, blurring)
+    nonisolated static let privacy = Logger(subsystem: subsystem, category: "Privacy")
 }
 
 // MARK: - Conditional Logging Helpers

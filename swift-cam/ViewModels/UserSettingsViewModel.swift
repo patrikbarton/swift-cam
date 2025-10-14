@@ -68,6 +68,10 @@ class UserSettingsViewModel: ObservableObject {
         didSet { UserDefaults.standard.set(bestShotDuration, forKey: Keys.bestShotDuration) }
     }
     
+    @Published var bestShotConfidenceThreshold: Double = 0.80 {
+        didSet { UserDefaults.standard.set(bestShotConfidenceThreshold, forKey: Keys.bestShotConfidenceThreshold) }
+    }
+    
     @Published var highlightRules: [String: Double] = [:] {
         didSet { saveHighlightRules() }
     }
@@ -84,6 +88,7 @@ class UserSettingsViewModel: ObservableObject {
         static let locationMetadata = "includeLocationMetadata"
         static let bestShotTarget = "bestShotTargetLabel"
         static let bestShotDuration = "bestShotDuration"
+        static let bestShotConfidenceThreshold = "bestShotConfidenceThreshold"
         static let highlightRules = "highlightRules"
     }
     
@@ -106,6 +111,7 @@ class UserSettingsViewModel: ObservableObject {
         loadLocationMetadata()
         loadBestShotTarget()
         loadBestShotDuration()
+        loadBestShotConfidenceThreshold()
         loadHighlightRules()
     }
     
@@ -167,6 +173,14 @@ class UserSettingsViewModel: ObservableObject {
         }
     }
     
+    private func loadBestShotConfidenceThreshold() {
+        if UserDefaults.standard.object(forKey: Keys.bestShotConfidenceThreshold) != nil {
+            bestShotConfidenceThreshold = UserDefaults.standard.double(forKey: Keys.bestShotConfidenceThreshold)
+        } else {
+            bestShotConfidenceThreshold = 0.80 // Default
+        }
+    }
+    
     private func loadHighlightRules() {
         if let data = UserDefaults.standard.data(forKey: Keys.highlightRules),
            let decodedRules = try? JSONDecoder().decode([String: Double].self, from: data) {
@@ -205,6 +219,7 @@ class UserSettingsViewModel: ObservableObject {
         includeLocationMetadata = false
         bestShotTargetLabel = ""
         bestShotDuration = 10.0
+        bestShotConfidenceThreshold = 0.80
         highlightRules = ["keyboard": 0.8, "mouse": 0.8, "laptop": 0.8]
         
         Logger.ui.info("User settings reset to defaults")

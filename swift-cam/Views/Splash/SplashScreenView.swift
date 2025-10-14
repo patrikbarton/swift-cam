@@ -2,37 +2,37 @@
 //  SplashScreenView.swift
 //  swift-cam
 //
-//  Startup splash screen with ML model preloading
+//  A view shown at app startup during initial model preloading.
 //
 
 import SwiftUI
 
-/// Splash screen displayed during app initialization
+/// A splash screen that provides visual feedback during the app's initial model preloading sequence.
 ///
-/// Shown on first launch and during model preloading. Provides visual
-/// feedback on loading progress while ML models are compiled and cached.
+/// This view is displayed by the root `SwiftCamApp` while the `AppStateViewModel` is
+/// in its `isLoading` state. It features entrance animations and a real-time progress
+/// bar that reflects the model loading progress.
 ///
-/// **Responsibilities:**
-/// - Display app branding (logo, name, tagline)
-/// - Show loading progress with model count
-/// - Animate entrance (scale, opacity, fade-in)
-/// - Transition smoothly to main content
+/// **UI Layout:**
+/// ```
+/// ┌───────────────────────────┐
+/// │                           │
+/// │         [App Logo]        │
+/// │                           │
+/// │          AI Vision          │
+/// │   Intelligent Recognition   │
+/// │                           │
+/// │             o             │
+/// │      Loading Model...     │
+/// │      [––––––––––––––]     │
+/// │                           │
+/// └───────────────────────────┘
+/// ```
 ///
-/// **Loading Sequence:**
-/// 1. Logo scales in with fade
-/// 2. App name and tagline appear
-/// 3. Progress indicator shows model loading
-/// 4. Individual model names displayed as they load
-/// 5. Auto-transitions when complete (~2 seconds total)
-///
-/// **UI Animation:**
-/// - Logo: Scale 0.8→1.0 + opacity 0→1
-/// - Text: Staggered fade-in
-/// - Progress: Real-time updates from AppStateViewModel
-///
-/// **Integration:**
-/// Reads state from `AppStateViewModel` via `@EnvironmentObject`.
-/// View automatically dismisses when `isLoading` becomes false.
+/// **State & Animation:**
+/// - Observes `AppStateViewModel` from the environment to get `loadingProgress`, `currentModelNumber`, and `totalModels`.
+/// - Uses local `@State` variables (`scale`, `opacity`) to drive a fade-and-scale entrance animation when the view appears.
+/// - The root `SwiftCamApp` view automatically removes this view from the hierarchy when `appState.isLoading` becomes `false`.
 struct SplashScreenView: View {
     
     // MARK: - Environment

@@ -9,35 +9,40 @@ import SwiftUI
 import PhotosUI
 import OSLog
 
-/// Home tab featuring photo library selection and ML classification results
+/// The main view for the "Home" tab, focused on classifying images from the user's photo library.
 ///
-/// This view provides the static image classification experience:
+/// This view allows a user to select an image, runs it through the currently selected
+/// ML model, and displays the results. It serves as the primary interface for static
+/// image analysis.
 ///
-/// **Features:**
-/// - Photo library image selection via PhotosPicker
-/// - ML classification with selected model
-/// - Face privacy protection (optional blur)
-/// - Confidence-based result display
-/// - Error handling with user-friendly alerts
+/// **UI Layout & States:**
+/// The view has two primary states:
+/// 1.  **Empty State:** A large, interactive button prompts the user to select a photo.
+///     ```
+///     ┌───────────────────────────┐
+///     │         AI Vision         │
+///     ├───────────────────────────┤
+///     │                           │
+///     │   [   Choose Photo    ]   │
+///     │                           │
+///     └───────────────────────────┘
+///     ```
+/// 2.  **Results State:** An image preview is shown with the classification results below.
+///     ```
+///     ┌───────────────────────────┐
+///     │         AI Vision         │
+///     ├───────────────────────────┤
+///     │     [Image Preview]     │
+///     ├───────────────────────────┤
+///     │      [Result 1]         │
+///     │      [Result 2]         │
+///     └───────────────────────────┘
+///     ```
 ///
-/// **UI Flow:**
-/// 1. User selects image from photo library
-/// 2. Image loads and displays with loading indicator
-/// 3. Classification runs in background
-/// 4. Results appear below image, sorted by confidence
-/// 5. Option to clear and select new image
-///
-/// **UI States:**
-/// - Empty: Premium animated empty state
-/// - Loading: Progress indicator with model name
-/// - Results: Image preview + classification list
-/// - Error: Alert with localized error message
-///
-/// **Integration:**
-/// - Uses `HomeViewModel` for classification logic
-/// - Accesses `AppStateViewModel` for global settings
-/// - Respects face blurring preference
-/// - Shows current model and compute unit
+/// **State Management:**
+/// - Uses `HomeViewModel` as its primary source of truth for the selected image, classification results, and analysis state (loading, error).
+/// - Receives `AppStateViewModel` to access global settings like `faceBlurringEnabled` and the current `blurStyle`.
+/// - Uses local `@State` to manage the `PhotosPickerItem` selection.
 struct HomeTabView: View {
     
     // MARK: - Dependencies

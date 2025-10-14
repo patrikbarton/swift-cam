@@ -2,26 +2,32 @@
 //  CameraPreviewView.swift
 //  swift-cam
 //
-//  UIKit-wrapped camera preview layer for AVCaptureSession
+//  A SwiftUI View that displays the live video feed from an AVCaptureSession.
 //
 
 import SwiftUI
 import AVFoundation
 
-/// SwiftUI wrapper for AVCaptureVideoPreviewLayer
+/// A SwiftUI view that wraps a UIKit `UIView` to display the live video feed from an `AVCaptureSession`.
 ///
-/// Bridges AVFoundation's camera preview into SwiftUI views using
-/// `UIViewRepresentable` protocol.
+/// This component is essential for showing the camera's output within a SwiftUI view hierarchy.
+/// It uses the `UIViewRepresentable` protocol to bridge `AVCaptureVideoPreviewLayer`.
 ///
-/// **Configuration:**
-/// - Uses `.resizeAspectFill` to fill frame and crop excess
-/// - Black background for letterboxing
-/// - Automatic orientation handling
+/// **Implementation Details:**
+/// - Contains a nested `UIView` subclass, `VideoPreviewView`, whose backing layer is set to `AVCaptureVideoPreviewLayer`.
+/// - The `makeUIView` method connects the provided `AVCaptureSession` to this layer.
+/// - `videoGravity` is set to `.resizeAspectFill` to ensure the camera feed fills the available space, cropping as necessary.
 ///
 /// **Usage:**
 /// ```swift
-/// CameraPreviewView(session: captureSession)
-///     .frame(width: 390, height: 390) // Square camera
+/// struct MyView: View {
+///     let session: AVCaptureSession
+///
+///     var body: some View {
+///         CameraPreviewView(session: session)
+///             .ignoresSafeArea()
+///     }
+/// }
 /// ```
 struct CameraPreviewView: UIViewRepresentable {
     

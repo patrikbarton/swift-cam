@@ -7,34 +7,32 @@
 
 import SwiftUI
 
-/// Main content view with tab-based navigation
+/// The root view of the application after the splash screen.
 ///
-/// This is the primary navigation container after app initialization,
-/// coordinating three main sections:
+/// This view establishes the main `TabView` navigation structure, providing access
+/// to the three core sections of the app: Home, Camera, and Settings.
 ///
-/// **Tab 1: Home** - Photo library and classification
-/// - Select images from photo library
-/// - View classification results
-/// - Apply face blurring for privacy
+/// **UI Layout:**
+/// ```
+/// ┌───────────────────────────┐
+/// │                           │
+/// │      [Active Tab View]      │
+/// │                           │
+/// │                           │
+/// ├───────────────────────────┤
+/// │ [Home]  [Camera] [Settings] │  <- TabBar
+/// └───────────────────────────┘
+/// ```
 ///
-/// **Tab 2: Camera (Default)** - Live camera detection
-/// - Real-time object detection
-/// - Best Shot automatic capture
-/// - Assisted capture mode
-/// - Object highlighting
+/// **State Management:**
+/// - Receives the shared `AppStateViewModel` as an `@EnvironmentObject` to pass down to child tabs.
+/// - Creates and owns the `HomeViewModel` which is shared between the Home and Settings tabs.
+/// - Manages the currently selected tab via local `@State`.
 ///
-/// **Tab 3: Settings** - Configuration
-/// - ML model selection
-/// - Camera settings
-/// - Privacy options
-/// - System information
-///
-/// **Architecture:**
-/// Each tab has its own ViewModel and maintains independent state.
-/// `AppStateViewModel` is shared across all tabs for global settings.
-///
-/// **UI Theme:**
-/// Uses "Liquid Glass" dark mode aesthetic with `.appAccent` tint color.
+/// **Tabs:**
+/// 1. **Home:** Photo library and past classification results.
+/// 2. **Camera:** The main live camera interface (default tab).
+/// 3. **Settings:** App configuration.
 struct ContentView: View {
     
     // MARK: - State
@@ -45,8 +43,8 @@ struct ContentView: View {
     /// ViewModel for photo classification (used by Home and Settings)
     @StateObject private var cameraViewModel = HomeViewModel()
     
-    /// Global app state coordinator (initialization + settings)
-    @StateObject private var appStateViewModel = AppStateViewModel()
+    /// Global app state coordinator (received from environment)
+    @EnvironmentObject private var appStateViewModel: AppStateViewModel
     
     // MARK: - Body
     
@@ -90,4 +88,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(AppStateViewModel())
 }

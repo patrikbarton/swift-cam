@@ -1,13 +1,36 @@
-
 //
 //  BestShotResultsView.swift
 //  swift-cam
 //
-//  Created by Joshua Noeldeke on 10/13/25.
+//  A modal view to display, select, and save images from a Best Shot sequence.
 //
 
 import SwiftUI
 
+/// A modal sheet that displays the images captured during a "Best Shot" sequence.
+///
+/// This view allows the user to review all the high-confidence photos that were
+/// automatically captured, select the ones they wish to keep, and save them to the
+/// device's photo library.
+///
+/// **UI Layout:**
+/// ```
+/// ┌───────────────────────────┐
+/// │ [Cancel]   Best Shots  [Save] │
+/// ├───────────────────────────┤
+/// │      [Image Candidate 1]    │
+/// │ ┌───────────────────────┐ │
+/// │ │      [Image Candidate 2]    │
+/// │ └───────────────────────┘ │
+/// │           ...             │
+/// └───────────────────────────┘
+/// ```
+///
+/// **State Management:**
+/// - Receives an array of `CaptureCandidate` objects to display.
+/// - Manages the user's selections in a local `@State` variable (`selectedImageData`).
+/// - Uses an `onDismiss` closure to close the sheet.
+/// - Interacts with `PhotoSaverService` to save the selected images.
 struct BestShotResultsView: View {
     // The candidates passed from the camera view
     let candidates: [LiveCameraViewModel.CaptureCandidate]

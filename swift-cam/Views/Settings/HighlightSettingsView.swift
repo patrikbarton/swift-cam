@@ -1,6 +1,39 @@
+//
+//  BestShotSettingsView.swift
+//  swift-cam
+//
+//  A view for creating, viewing, and managing object highlighting rules.
+//
 
 import SwiftUI
 
+/// A view for creating, viewing, and managing object highlighting rules.
+///
+/// This screen allows users to define which objects should be highlighted in the live
+/// camera view and at what confidence threshold. It provides a full CRUD (Create, Read,
+/// Update, Delete) interface for managing these rules.
+///
+/// **UI Layout:**
+/// The view is split into two main sections:
+/// 1.  **Current Rules:** A list of all active highlight rules. Tapping a rule populates the form below for editing.
+/// 2.  **Add/Edit Form:** A form with an autocomplete text field and a slider to define a new rule or edit an existing one.
+///     ```
+///     ┌───────────────────────────┐
+///     │      [Current Rules]      │
+///     │   [Rule 1: Cat > 80%  🗑️]  │
+///     │   [Rule 2: Dog > 70%  🗑️]  │
+///     ├───────────────────────────┤
+///     │       [Add New Rule]      │
+///     │   [   Object Label    ]   │
+///     │   [--o--------] (Slider)  │
+///     │   [     Add Rule      ]   │
+///     └───────────────────────────┘
+///     ```
+///
+/// **State Management:**
+/// - Uses a `@Binding var highlightRules` to directly read and modify the dictionary of rules owned by a parent view.
+/// - Receives `modelLabels` to provide autocomplete suggestions.
+/// - Manages the "Add New Rule" form inputs with local `@State` variables.
 struct HighlightSettingsView: View {
     @Binding var highlightRules: [String: Double]
     let modelLabels: [String]

@@ -1,13 +1,36 @@
-
 //
 //  BestShotSettingsView.swift
 //  swift-cam
 //
-//  Created by Joshua Noeldeke on 10/13/25.
+//  A view for selecting the target object label for Best Shot mode.
 //
 
 import SwiftUI
 
+/// A view dedicated to selecting a target object for the "Best Shot" auto-capture feature.
+///
+/// This screen provides an autocomplete interface to help the user choose a valid
+/// object label from the list of labels known to the current ML model.
+///
+/// **UI Layout:**
+/// ```
+/// ┌───────────────────────────┐
+/// │    [Best Shot Target]     │
+/// │  [   Enter object...   ]  │
+/// ├───────────────────────────┤
+/// │ ┌───────────────────────┐ │
+/// │ │ [Suggestion 1      ✓] │ │
+/// │ ├───────────────────────┤ │
+/// │ │ [Suggestion 2       ] │ │
+/// │ └───────────────────────┘ │
+/// │           ...             │
+/// └───────────────────────────┘
+/// ```
+///
+/// **State Management:**
+/// - Uses a `@Binding var targetLabel: String` to modify the parent view's state directly.
+/// - Receives a `let modelLabels: [String]` array to populate the autocomplete suggestions.
+/// - Manages the text field's input and focus state with local `@State` and `@FocusState` variables.
 struct BestShotSettingsView: View {
     @Binding var targetLabel: String
     let modelLabels: [String]

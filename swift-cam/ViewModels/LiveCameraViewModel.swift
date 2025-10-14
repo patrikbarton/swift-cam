@@ -1,3 +1,4 @@
+
 //
 //  LiveCameraViewModel.swift
 //  swift-cam
@@ -7,7 +8,7 @@
 
 import SwiftUI
 import Combine
-import AVFoundation
+@preconcurrency import AVFoundation
 import Vision
 import CoreML
 import CoreImage
@@ -17,29 +18,24 @@ import ImageIO
 import UniformTypeIdentifiers
 
 
-/// Manages live camera feed and real-time ML classification
+/// Manages the live camera feed and real-time ML classification with a simplified, efficient, and concurrency-safe architecture.
 ///
-/// This ViewModel coordinates the entire live camera experience, including:
-/// - Camera session management (multi-camera support)
-/// - Real-time object detection using Vision framework
-/// - Best Shot automatic capture sequence
-/// - Object highlighting based on custom rules
-/// - Assisted capture mode (only allow capture when target detected)
-/// - Face blurring for privacy protection
+/// This ViewModel coordinates the entire live camera experience by delegating ML inference tasks
+/// to the shared `VisionService`, which handles all model and request caching.
 ///
-/// **Threading Architecture:**
-/// - Camera capture runs on background `processingQueue`
-/// - ML inference throttled to 0.5s intervals for performance
-/// - UI updates dispatched to main thread via `@MainActor`
+/// **Key Responsibilities:**
+/// - Camera session management (multi-camera support).
+/// - Throttling and dispatching camera frames to `VisionService` for analysis.
+/// - Receiving classification results and updating the UI.
+/// - Managing the "Best Shot" automatic capture sequence.
+/// - Handling user-configurable features like face blurring and object highlighting.
 ///
-/// **Usage:**
-/// ```swift
-/// @StateObject private var cameraVM = LiveCameraViewModel()
-/// 
-/// cameraVM.startSession()
-/// cameraVM.updateModel(to: .mobileNet)
-/// cameraVM.startBestShotSequence(duration: 10.0)
-/// ```
+/// **Concurrency Architecture:**
+/// - The ViewModel is a `@MainActor` to safely publish changes to the UI.
+/// - `AVCaptureSession` and related properties are marked `nonisolated` and are managed exclusively on a serial `processingQueue` to prevent data races.
+/// - The `captureOutput` delegate method is `nonisolated` and uses a structured `Task` to bridge from the background queue to the async world.
+/// - UI updates are explicitly dispatched back to the main actor via `await MainActor.run`.
+@MainActor
 class LiveCameraViewModel: NSObject, ObservableObject {
     @Published var liveResults: [ClassificationResult] = []
     @Published var isProcessing = false
@@ -55,6 +51,8 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     var includeLocationMetadata = true // Setting to control location embedding
     var blurStyle: BlurStyle = .gaussian
     var bestShotTargetLabel: String = ""
+    var bestShotConfidenceThreshold: Double = 0.8 // Default value, updated from view
+
     
     // Best Shot Properties
     @Published var isBestShotSequenceActive = false
@@ -81,21 +79,26 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     @Published var availableBackCameras: [AVCaptureDevice] = []
     @Published var activeCamera: AVCaptureDevice?
     
-    let session = AVCaptureSession()
-    private var photoOutput = AVCapturePhotoOutput()
-    private var videoOutput = AVCaptureVideoDataOutput()
+    // These properties are accessed from the background processingQueue.
+    // Marking them nonisolated tells the compiler they are not part of the MainActor's state.
+    // We are responsible for ensuring thread-safe access, which we do via the serial `processingQueue`.
+    nonisolated let session = AVCaptureSession()
+    nonisolated private let photoOutput = AVCapturePhotoOutput()
+    nonisolated private let videoOutput = AVCaptureVideoDataOutput()
     private let photoSaver = PhotoSaverService()
     
-    // Enhanced object tracking properties
+    // Throttling properties for performance management
     private var lastProcessingTime: Date = Date()
     private var lastBlurOverlayTime: Date = Date() // Separate timing for blur overlay
-    private let processingInterval: TimeInterval = 0.5 // Reduced frequency for better performance
-    private var processingQueue = DispatchQueue(label: "classification.queue", qos: .userInitiated)
+    private let processingInterval: TimeInterval = 0.5 // Run classification every 0.5s
+    nonisolated private let processingQueue = DispatchQueue(label: "classification.queue", qos: .userInitiated)
     private let thumbnailQueue = DispatchQueue(label: "thumbnail.generation.queue", qos: .utility)
     
+    // The ViewModel now only needs to know which model is currently active.
+    // The VisionService handles all loading, caching, and request management.
     private var currentModel: MLModelType = .mobileNet
-    private var classificationRequest: VNCoreMLRequest?
-    private let modelService = ModelService.shared
+    
+    private let visionService = VisionService.shared
     private let faceBlurService = FaceBlurringService()
     private let hapticManager = HapticManagerService.shared
     private let locationManager = CLLocationManager()
@@ -108,15 +111,19 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     override init() {
         super.init()
         locationManager.delegate = self
-        setupSessionAndOutputs()
-        discoverDevicesAndSetInitialCamera()
-        Task { @MainActor in
-            await loadModel(.mobileNet)
+        // Defer session setup to the background queue where it will be managed.
+        processingQueue.async {
+            self.setupSessionAndOutputs()
         }
+        discoverDevicesAndSetInitialCamera()
     }
     
-    private func setupSessionAndOutputs() {
+    /// Configures the AVCaptureSession and its inputs/outputs.
+    /// This method is `nonisolated` because it only touches other `nonisolated` properties.
+    /// It must be called from the `processingQueue`.
+    nonisolated private func setupSessionAndOutputs() {
         session.beginConfiguration()
+        defer { session.commitConfiguration() }
 
         if session.canSetSessionPreset(.photo) {
             session.sessionPreset = .photo
@@ -130,8 +137,6 @@ class LiveCameraViewModel: NSObject, ObservableObject {
             videoOutput.setSampleBufferDelegate(self, queue: processingQueue)
             session.addOutput(videoOutput)
         }
-
-        session.commitConfiguration()
     }
     
     private func discoverDevicesAndSetInitialCamera() {
@@ -141,23 +146,24 @@ class LiveCameraViewModel: NSObject, ObservableObject {
             position: .back
         )
 
-        DispatchQueue.main.async {
-            self.availableBackCameras = discoverySession.devices
-            Logger.cameraSetup.log("📸 Discovered back cameras: \(self.availableBackCameras.map { $0.localizedName })")
+        // This updates UI properties, so it must be on the main thread.
+        self.availableBackCameras = discoverySession.devices
+        Logger.cameraSetup.log("📸 Discovered back cameras: \(self.availableBackCameras.map { $0.localizedName })")
 
-            if let wideCamera = self.availableBackCameras.first(where: { $0.deviceType == .builtInWideAngleCamera }) {
-                self.switchToDevice(wideCamera)
-            } else if let firstAvailable = self.availableBackCameras.first {
-                self.switchToDevice(firstAvailable)
-            }
+        if let wideCamera = self.availableBackCameras.first(where: { $0.deviceType == .builtInWideAngleCamera }) {
+            switchToDevice(wideCamera)
+        } else if let firstAvailable = self.availableBackCameras.first {
+            switchToDevice(firstAvailable)
         }
     }
     
     func switchToDevice(_ device: AVCaptureDevice) {
+        // The work of switching the device must happen on the processing queue.
         processingQueue.async {
             self.session.beginConfiguration()
             defer { self.session.commitConfiguration() }
 
+            // Remove existing input
             if let currentInput = self.session.inputs.first {
                 self.session.removeInput(currentInput)
             }
@@ -169,7 +175,8 @@ class LiveCameraViewModel: NSObject, ObservableObject {
 
             if self.session.canAddInput(input) {
                 self.session.addInput(input)
-                DispatchQueue.main.async {
+                // Dispatch UI updates back to the main actor.
+                Task { @MainActor in
                     self.activeCamera = device
                     Logger.cameraSetup.log("✅ Switched to camera: \(device.localizedName)")
                 }
@@ -180,7 +187,7 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     }
     
     func switchCamera() {
-        // Front/Back toggle
+        // Front/Back toggle logic remains on the MainActor
         let newPosition: AVCaptureDevice.Position = (activeCamera?.position == .back) ? .front : .back
 
         if newPosition == .front {
@@ -188,70 +195,29 @@ class LiveCameraViewModel: NSObject, ObservableObject {
             if let device = discoverySession.devices.first {
                 switchToDevice(device)
             }
-            DispatchQueue.main.async { self.availableBackCameras = [] }
+            self.availableBackCameras = []
         } else {
             discoverDevicesAndSetInitialCamera()
         }
     }
     
-    @MainActor
-    func loadModel(_ modelType: MLModelType) async {
-        isLoadingModel = true
-        liveResults.removeAll()
-
-        do {
-            // 1. Load the MLModel from the service
-            let mlModel = try await modelService.loadCoreMLModel(for: modelType)
-            
-            // 2. Create the VNCoreMLModel wrapper
-            let visionModel = try VNCoreMLModel(for: mlModel)
-            
-            // 3. Create the request with the completion handler
-            // Fixed: Use Task with @MainActor to avoid nested dispatch and retain cycles
-            let request = VNCoreMLRequest(model: visionModel) { [weak self] request, error in
-                guard let self = self else { return }
-                Task { @MainActor in
-                    self.processLiveClassifications(for: request, error: error)
-                }
-            }
-            request.imageCropAndScaleOption = .centerCrop
-            
-            self.classificationRequest = request
-            self.currentModel = modelType
-            
-        } catch {
-            Logger.model.error("❌ Failed to load model \(modelType.displayName) in LiveCameraViewModel: \(error.localizedDescription)")
-            // Optionally, set an error state for the UI
-        }
+    /// Updates the active ML model for live classification.
+    func updateModel(to modelType: MLModelType) {
+        guard modelType != currentModel else { return }
         
-        // Set the input size for the low-res preview
+        currentModel = modelType
+        liveResults.removeAll()
+        
         switch modelType {
         case .mobileNet, .resnet50:
             self.modelInputSize = CGSize(width: 224, height: 224)
         case .fastViT:
             self.modelInputSize = CGSize(width: 256, height: 256)
         }
-        
-        isLoadingModel = false
-    }
-    
-    func updateModel(to modelType: MLModelType) {
-        guard modelType != currentModel else { return }
-        
-        Task { @MainActor in
-            await loadModel(modelType)
-        }
     }
 
     // MARK: - Best Shot Sequence
     
-    /// Start Best Shot automatic capture sequence
-    /// 
-    /// Monitors live camera feed for the target object and automatically captures
-    /// high-resolution photos when detected with >80% confidence. Captures are
-    /// throttled to one per second to avoid duplicates.
-    ///
-    /// - Parameter duration: Length of capture sequence in seconds
     func startBestShotSequence(duration: Double) {
         guard !isBestShotSequenceActive else { return }
         
@@ -262,21 +228,15 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         bestShotCandidates.removeAll()
         bestShotCandidateCount = 0
         
-        // Invalidate any existing timer
         sequenceTimer?.invalidate()
-        
-        // Start a new timer
         sequenceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self.bestShotCountdown -= 1
-                
-                // Add haptic feedback for the last 3 seconds
                 if self.bestShotCountdown <= 3 && self.bestShotCountdown > 0 {
                     self.hapticManager.impact(.medium)
                 }
-
                 if self.bestShotCountdown <= 0 {
                     self.stopBestShotSequence()
                 }
@@ -293,17 +253,12 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         sequenceTimer?.invalidate()
         sequenceTimer = nil
         
-        // Process results
         processBestShotCandidates()
     }
     
     private func processBestShotCandidates() {
-        // Sort candidates by confidence
         let sortedCandidates = bestShotCandidates.sorted { $0.result.confidence > $1.result.confidence }
-        
         Logger.bestShot.info("Found \(self.bestShotCandidates.count) candidates. Presenting top \(sortedCandidates.count).")
-        
-        // Publish the top candidates to the UI
         self.topCandidates = sortedCandidates
         self.bestShotCandidates.removeAll()
     }
@@ -314,9 +269,9 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     }
     
     func stopSession() {
-        session.stopRunning()
+        processingQueue.async { self.session.stopRunning() }
         locationManager.stopUpdatingLocation()
-        DispatchQueue.main.async {
+        Task { @MainActor in
             self.liveResults.removeAll()
             self.lowResPreviewImage = nil
         }
@@ -324,13 +279,13 @@ class LiveCameraViewModel: NSObject, ObservableObject {
     
     func capturePhotoAndSave() {
         let settings = AVCapturePhotoSettings()
+        // photoOutput is nonisolated, so we can call it from the MainActor
+        // and its delegate methods will be called on the correct queue.
         self.photoOutput.capturePhoto(with: settings, delegate: self)
     }
     
-    /// Apply face blurring to captured photo
     private func applyFaceBlurIfNeeded(to image: UIImage) async -> UIImage {
         guard faceBlurringEnabled else { return image }
-        
         do {
             let blurred = try await faceBlurService.blurFaces(in: image, blurRadius: 20.0, blurStyle: blurStyle)
             Logger.bestShot.info("🔒 Face blurring applied to live capture")
@@ -341,24 +296,14 @@ class LiveCameraViewModel: NSObject, ObservableObject {
         }
     }
     
-    private func processLiveClassifications(for request: VNRequest, error: Error?) {
-        guard error == nil, let observations = request.results as? [VNClassificationObservation] else { return }
-
-        // Directly map the latest observations to results for instant feedback
-        self.liveResults = observations.prefix(5).compactMap { observation -> ClassificationResult? in
-            guard observation.confidence > 0.25 else { return nil }
-            return ClassificationResult(identifier: observation.identifier, confidence: Double(observation.confidence))
-        }
-        
-        // Check for highlight condition
+    private func processAndHighlight(results: [ClassificationResult]) {
+        self.liveResults = results
         var highlight = false
-        for result in self.liveResults {
+        for result in results {
             let identifier = result.identifier.lowercased()
-            // Check primary label and potential synonyms/broader categories
             let keysToCheck = [identifier] + identifier.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
-            
             for key in keysToCheck {
-                if let threshold = highlightRules[key], result.confidence >= threshold {
+                if let threshold = self.highlightRules[key], result.confidence >= threshold {
                     highlight = true
                     break
                 }
@@ -386,22 +331,21 @@ extension LiveCameraViewModel: CLLocationManagerDelegate {
 
 // MARK: - Camera Delegate Extensions
 extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        guard let imageData = photo.fileDataRepresentation() else { return }
-        guard let originalImage = UIImage(data: imageData) else { return }
+    // This delegate method is called by AVFoundation on a background thread.
+    nonisolated func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        guard let imageData = photo.fileDataRepresentation(), let originalImage = UIImage(data: imageData) else { return }
         
-        // Extract original metadata from photo
-        let originalMetadata = photo.metadata as [String: Any]
+        let originalMetadata = photo.metadata
         
-        // Apply face blurring if enabled (for both manual and best shot captures)
         Task {
             let processedImage = await applyFaceBlurIfNeeded(to: originalImage)
             
-            // Preserve EXIF metadata when creating final image data
+            let location = await MainActor.run { self.includeLocationMetadata ? self.currentLocation : nil }
+            
             let finalImageData = createImageDataWithMetadata(
                 image: processedImage,
-                originalMetadata: originalMetadata,
-                location: includeLocationMetadata ? currentLocation : nil
+                originalMetadata: originalMetadata as [String: Any],
+                location: location
             )
             
             guard let finalImageData = finalImageData else {
@@ -409,16 +353,13 @@ extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
                 return
             }
             
-            // Check if this is a "Best Shot" capture
-            if let result = pendingBestShotResult {
-                self.pendingBestShotResult = nil // Reset immediately
+            let result = await MainActor.run { self.pendingBestShotResult }
+            if let result = result {
+                await MainActor.run { self.pendingBestShotResult = nil }
                 
-                // Create a thumbnail in the background to avoid blocking the main thread
                 thumbnailQueue.async {
                     let thumbnail = processedImage.preparingThumbnail(of: CGSize(width: 400, height: 400))
-                    
-                    // Add the candidate on the main thread
-                    DispatchQueue.main.async {
+                    Task { @MainActor in
                         let candidate = CaptureCandidate(imageData: finalImageData, result: result, thumbnail: thumbnail, location: self.currentLocation)
                         self.bestShotCandidates.append(candidate)
                         self.bestShotCandidateCount += 1
@@ -426,18 +367,14 @@ extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
                         Logger.bestShot.info("Successfully captured hi-res candidate for \(result.identifier).")
                     }
                 }
-                return // End here for best shot captures
+                return
             }
             
-            // If not a best shot capture, it's a manual capture. Save it directly.
-            hapticManager.impact(.heavy)
-            
-            // Save photo with optional location (metadata already embedded)
-            let locationToSave = includeLocationMetadata ? currentLocation : nil
+            await hapticManager.impact(.heavy)
+            let locationToSave = await MainActor.run { self.includeLocationMetadata ? self.currentLocation : nil }
             photoSaver.saveImageData(finalImageData, location: locationToSave)
             
-            // Trigger confirmation UI
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.showSaveConfirmation = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                     self.showSaveConfirmation = false
@@ -446,229 +383,180 @@ extension LiveCameraViewModel: AVCapturePhotoCaptureDelegate {
         }
     }
     
-    /// Creates JPEG data from UIImage while preserving EXIF metadata
-    ///
-    /// - Parameters:
-    ///   - image: The processed UIImage to save
-    ///   - originalMetadata: Original EXIF metadata from AVCapturePhoto
-    ///   - location: Optional GPS location to embed
-    /// - Returns: JPEG data with preserved metadata
-    private func createImageDataWithMetadata(
-        image: UIImage,
-        originalMetadata: [String: Any],
-        location: CLLocation?
-    ) -> Data? {
+    nonisolated private func createImageDataWithMetadata(image: UIImage, originalMetadata: [String: Any], location: CLLocation?) -> Data? {
         guard let cgImage = image.cgImage else { return nil }
-        
-        // Create mutable metadata dictionary
         var metadata = originalMetadata
-        
-        // Add GPS metadata if location provided
         if let location = location {
-            var gpsMetadata: [String: Any] = [:]
-            
-            let latitude = location.coordinate.latitude
-            let longitude = location.coordinate.longitude
-            
-            gpsMetadata[kCGImagePropertyGPSLatitude as String] = abs(latitude)
-            gpsMetadata[kCGImagePropertyGPSLatitudeRef as String] = latitude >= 0 ? "N" : "S"
-            gpsMetadata[kCGImagePropertyGPSLongitude as String] = abs(longitude)
-            gpsMetadata[kCGImagePropertyGPSLongitudeRef as String] = longitude >= 0 ? "E" : "W"
-            
-            if location.altitude >= 0 {
-                gpsMetadata[kCGImagePropertyGPSAltitude as String] = location.altitude
-                gpsMetadata[kCGImagePropertyGPSAltitudeRef as String] = 0
-            }
-            
-            if location.horizontalAccuracy >= 0 {
-                gpsMetadata[kCGImagePropertyGPSHPositioningError as String] = location.horizontalAccuracy
-            }
-            
-            // Add timestamp
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy:MM:dd"
-            gpsMetadata[kCGImagePropertyGPSDateStamp as String] = dateFormatter.string(from: location.timestamp)
-            
-            dateFormatter.dateFormat = "HH:mm:ss"
-            gpsMetadata[kCGImagePropertyGPSTimeStamp as String] = dateFormatter.string(from: location.timestamp)
-            
-            metadata[kCGImagePropertyGPSDictionary as String] = gpsMetadata
+            metadata[kCGImagePropertyGPSDictionary as String] = location.gpsMetadata
         }
-        
-        // Create output data
         let mutableData = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(
-            mutableData,
-            UTType.jpeg.identifier as CFString,
-            1,
-            nil
-        ) else {
-            return nil
-        }
-        
-        // Add image with metadata
+        guard let destination = CGImageDestinationCreateWithData(mutableData, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
         CGImageDestinationAddImage(destination, cgImage, metadata as CFDictionary)
-        
-        // Finalize
-        guard CGImageDestinationFinalize(destination) else {
-            return nil
-        }
-        
+        guard CGImageDestinationFinalize(destination) else { return nil }
         return mutableData as Data
     }
 }
 
+// MARK: - Camera Frame Processing
 extension LiveCameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        let currentTime = Date()
-        guard currentTime.timeIntervalSince(lastProcessingTime) >= processingInterval else { return }
-        
-        guard !isProcessing else { return }
-        
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        
-        // Determine proper orientation based on camera position
-        // Camera sensor provides landscape data, we need to rotate for portrait display
-        let isFrontCamera = activeCamera?.position == .front
-        
-        if showLowResPreview {
-            processingQueue.async {
-                let originalCIImage = CIImage(cvPixelBuffer: pixelBuffer)
+    
+    /// The main entry point for processing live video frames. This method is called by AVFoundation on the `processingQueue`.
+    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        // Create a new Task to bridge from the synchronous, non-isolated delegate method into the world of Swift Concurrency.
+        Task {
+            // Immediately hop to the main actor to perform throttling checks against properties that are part of the main actor's state.
+            let canProcess = await MainActor.run {
+                let currentTime = Date()
+                guard currentTime.timeIntervalSince(self.lastProcessingTime) >= self.processingInterval else { return false }
+                guard !self.isProcessing else { return false }
                 
-                // Don't apply any orientation here - keep raw sensor data
-                // The Image view will handle the display orientation
+                // Update state and proceed
+                self.lastProcessingTime = currentTime
+                self.isProcessing = true
+                return true
+            }
+            
+            // If throttling check passes, proceed with processing.
+            if canProcess {
+                // Ensure `isProcessing` is set back to false when the scope is exited.
+                defer {
+                    Task { @MainActor in self.isProcessing = false }
+                }
                 
-                // Crop to center square first (matching .centerCrop behavior)
-                let imageExtent = originalCIImage.extent
-                let shorterSide = min(imageExtent.width, imageExtent.height)
-                let croppingRect = CGRect(
-                    x: (imageExtent.width - shorterSide) / 2.0,
-                    y: (imageExtent.height - shorterSide) / 2.0,
-                    width: shorterSide,
-                    height: shorterSide
-                )
-                let croppedCIImage = originalCIImage.cropped(to: croppingRect)
+                guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
                 
-                // Scale down to model input size
-                let scaleX = self.modelInputSize.width / croppedCIImage.extent.width
-                let scaleY = self.modelInputSize.height / croppedCIImage.extent.height
-                let transform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+                // Determine camera orientation, requiring a brief hop to the main actor to read the `activeCamera` property.
+                let orientation = await MainActor.run { self.activeCamera?.position == .front ? CGImagePropertyOrientation.rightMirrored : .right }
+                let currentModel = await MainActor.run { self.currentModel }
                 
-                let scaledImage = croppedCIImage.transformed(by: transform)
-                
-                // Apply face blurring to low-res preview if live preview blur enabled
-                if self.livePreviewBlurEnabled {
-                    Task {
-                        var finalImageToDisplay = scaledImage
-                        do {
-                            if let blurredImage = try await self.faceBlurService.blurFaces(in: pixelBuffer, blurRadius: 10.0, blurStyle: self.blurStyle) {
-                                // Scale the blurred image to preview size
-                                let blurredExtent = blurredImage.extent
-                                let inputWidth = await self.modelInputSize.width
-                                let inputHeight = await self.modelInputSize.height
-                                let blurScale = min(
-                                    inputWidth / blurredExtent.width,
-                                    inputHeight / blurredExtent.height
-                                )
-                                let blurTransform = CGAffineTransform(scaleX: blurScale, y: blurScale)
-                                finalImageToDisplay = blurredImage.transformed(by: blurTransform)
-                            }
-                        } catch {
-                            // Silently continue with unblurred preview
+                // --- Perform Classification ---
+                Task.detached(priority: .userInitiated) {
+                    do {
+                        let results = try await self.visionService.performClassification(on: pixelBuffer, for: currentModel, orientation: orientation)
+                        await MainActor.run {
+                            self.processAndHighlight(results: results)
                         }
-                        
-                        if let cgImage = self.context.createCGImage(finalImageToDisplay, from: finalImageToDisplay.extent) {
-                            // Create UIImage with proper orientation for display
-                            // Portrait mode requires 90° rotation from landscape sensor data
-                            let orientation: UIImage.Orientation = isFrontCamera ? .leftMirrored : .right
-                            let finalImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
-                            DispatchQueue.main.async {
-                                self.lowResPreviewImage = finalImage
-                            }
-                        }
-                    }
-                } else {
-                    if let cgImage = self.context.createCGImage(scaledImage, from: scaledImage.extent) {
-                        // Create UIImage with proper orientation for display
-                        let orientation: UIImage.Orientation = isFrontCamera ? .leftMirrored : .right
-                        let finalImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
-                        DispatchQueue.main.async {
-                            self.lowResPreviewImage = finalImage
-                        }
+                    } catch {
+                        Logger.model.warning("Vision request failed: \(error.localizedDescription)")
                     }
                 }
-            }
-        } else if lowResPreviewImage != nil {
-            DispatchQueue.main.async {
-                self.lowResPreviewImage = nil
-            }
-        }
-        
-        // Handle face blur overlay for normal camera view (not low-res preview)
-        if !showLowResPreview && livePreviewBlurEnabled {
-            // Update blur overlay less frequently (every 1 second) using separate timer
-            let shouldUpdateBlur = currentTime.timeIntervalSince(lastBlurOverlayTime) >= 1.0
-            if shouldUpdateBlur {
-                lastBlurOverlayTime = currentTime
-                processingQueue.async {
-                    Task {
-                        do {
-                            // Create a lower resolution preview for blur overlay
-                            if let blurredImage = try await self.faceBlurService.blurFaces(in: pixelBuffer, blurRadius: 15.0, blurStyle: self.blurStyle) {
-                                // Convert to UIImage with proper orientation
-                                if let cgImage = self.context.createCGImage(blurredImage, from: blurredImage.extent) {
-                                    let orientation: UIImage.Orientation = isFrontCamera ? .leftMirrored : .right
-                                    let finalImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
-                                    DispatchQueue.main.async {
-                                        self.faceBlurOverlayImage = finalImage
-                                    }
-                                }
-                            }
-                        } catch {
-                            // Clear overlay if blur fails
-                            DispatchQueue.main.async {
-                                self.faceBlurOverlayImage = nil
-                            }
-                        }
-                    }
+                
+                // --- UI Previews (Restored) ---
+                Task.detached(priority: .utility) {
+                    await self.updateUIPreviews(pixelBuffer: pixelBuffer, currentTime: Date())
                 }
-            }
-        } else if faceBlurOverlayImage != nil {
-            DispatchQueue.main.async {
-                self.faceBlurOverlayImage = nil
-            }
-        }
-        
-        guard let classificationRequest = classificationRequest else { return }
-        
-        lastProcessingTime = currentTime
-        
-        // Pass correct orientation to the model request handler
-        // For Vision framework, we need CGImagePropertyOrientation (not UIImage.Orientation)
-        let visionOrientation: CGImagePropertyOrientation = isFrontCamera ? .rightMirrored : .right
-        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: visionOrientation)
-        
-        do {
-            try handler.perform([classificationRequest])
-        } catch {
-            // Silently handle errors to avoid UI disruption
-        }
-        
-        // --- Best Shot Candidate Capture ---
-        if isBestShotSequenceActive, !bestShotTargetLabel.isEmpty {
-            let now = Date()
-            // Throttle captures to once per second
-            guard now.timeIntervalSince(lastBestShotTime) > 1.0 else { return }
+                
+                // --- Best Shot Candidate Capture ---
+                await MainActor.run { // Hop to main actor to safely read best shot properties
+                    if self.isBestShotSequenceActive, !self.bestShotTargetLabel.isEmpty {
+                        let now = Date()
+                        guard now.timeIntervalSince(self.lastBestShotTime) > 1.0 else { return }
 
-            // Check if the top result matches the specific target label
-            if let bestResult = liveResults.first(where: { $0.identifier.lowercased().contains(bestShotTargetLabel.lowercased()) }),
-               bestResult.confidence > 0.8 {
-                
-                Logger.bestShot.debug("High-confidence object found: \(bestResult.identifier). Triggering hi-res capture.")
-                self.pendingBestShotResult = bestResult
-                self.lastBestShotTime = now
-                self.photoOutput.capturePhoto(with: AVCapturePhotoSettings(), delegate: self)
+                        if let bestResult = self.liveResults.first(where: { $0.identifier.lowercased().contains(self.bestShotTargetLabel.lowercased()) }),
+                           bestResult.confidence > self.bestShotConfidenceThreshold {
+                            
+                            Logger.bestShot.debug("High-confidence object found: \(bestResult.identifier). Triggering hi-res capture.")
+                            self.pendingBestShotResult = bestResult
+                            self.lastBestShotTime = now
+                            self.photoOutput.capturePhoto(with: AVCapturePhotoSettings(), delegate: self)
+                        }
+                    }
+                }
             }
         }
     }
+    
+    /// Handles the logic for updating the low-resolution and face-blur preview images.
+    private func updateUIPreviews(pixelBuffer: CVPixelBuffer, currentTime: Date) async {
+        // Fetch all required properties from the main actor in one go.
+        let (showLowRes, liveBlur, blurStyle, modelSize) = await MainActor.run { (self.showLowResPreview, self.livePreviewBlurEnabled, self.blurStyle, self.modelInputSize) }
+        let isFrontCamera = await MainActor.run { self.activeCamera?.position == .front }
+
+        if showLowRes {
+            // Pass the required modelSize into the nonisolated function.
+            if let lowResImage = createLowResPreview(from: pixelBuffer, isFrontCamera: isFrontCamera, modelSize: modelSize) {
+                await MainActor.run { self.lowResPreviewImage = lowResImage }
+            }
+        } else {
+            await MainActor.run { if self.lowResPreviewImage != nil { self.lowResPreviewImage = nil } }
+        }
+        
+        if !showLowRes && liveBlur {
+            let shouldUpdate = await MainActor.run {
+                let shouldUpdate = currentTime.timeIntervalSince(self.lastBlurOverlayTime) >= 1.0
+                if shouldUpdate {
+                    self.lastBlurOverlayTime = currentTime
+                }
+                return shouldUpdate
+            }
+            
+            if shouldUpdate {
+                if let blurredImage = await createFaceBlurPreview(from: pixelBuffer, isFrontCamera: isFrontCamera, blurStyle: blurStyle) {
+                    await MainActor.run { self.faceBlurOverlayImage = blurredImage }
+                } else {
+                    await MainActor.run { if self.faceBlurOverlayImage != nil { self.faceBlurOverlayImage = nil } }
+                }
+            }
+        } else {
+            await MainActor.run { if self.faceBlurOverlayImage != nil { self.faceBlurOverlayImage = nil } }
+        }
+    }
+    
+    /// Creates a low-resolution, center-cropped preview image suitable for display.
+    nonisolated private func createLowResPreview(from pixelBuffer: CVPixelBuffer, isFrontCamera: Bool, modelSize: CGSize) -> UIImage? {
+        let originalCIImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let imageExtent = originalCIImage.extent
+        let shorterSide = min(imageExtent.width, imageExtent.height)
+        let croppingRect = CGRect(
+            x: (imageExtent.width - shorterSide) / 2.0,
+            y: (imageExtent.height - shorterSide) / 2.0,
+            width: shorterSide,
+            height: shorterSide
+        )
+        let croppedCIImage = originalCIImage.cropped(to: croppingRect)
+        
+        // Use the modelSize passed in as a parameter instead of accessing the main actor property.
+        let scaleX = modelSize.width / croppedCIImage.extent.width
+        let scaleY = modelSize.height / croppedCIImage.extent.height
+        let transform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+        let scaledImage = croppedCIImage.transformed(by: transform)
+        
+        guard let cgImage = self.context.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
+        
+        let orientation: UIImage.Orientation = isFrontCamera ? .leftMirrored : .right
+        return UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
+    }
+    
+    /// Creates a preview image with blurred faces.
+    nonisolated private func createFaceBlurPreview(from pixelBuffer: CVPixelBuffer, isFrontCamera: Bool, blurStyle: BlurStyle) async -> UIImage? {
+        do {
+            guard let blurredCIImage = try await self.faceBlurService.blurFaces(in: pixelBuffer, blurRadius: 15.0, blurStyle: blurStyle) else { return nil }
+            guard let cgImage = self.context.createCGImage(blurredCIImage, from: blurredCIImage.extent) else { return nil }
+            
+            let orientation: UIImage.Orientation = isFrontCamera ? .leftMirrored : .right
+            return UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
+        } catch {
+            return nil
+        }
+    }
 }
+
+// Helper extension for GPS metadata
+fileprivate extension CLLocation {
+    var gpsMetadata: [String: Any] {
+        var metadata: [String: Any] = [:]
+        let latitudeRef = self.coordinate.latitude < 0.0 ? "S" : "N"
+        let longitudeRef = self.coordinate.longitude < 0.0 ? "W" : "E"
+        
+        metadata[kCGImagePropertyGPSLatitude as String] = abs(self.coordinate.latitude)
+        metadata[kCGImagePropertyGPSLatitudeRef as String] = latitudeRef
+        metadata[kCGImagePropertyGPSLongitude as String] = abs(self.coordinate.longitude)
+        metadata[kCGImagePropertyGPSLongitudeRef as String] = longitudeRef
+        metadata[kCGImagePropertyGPSAltitude as String] = abs(self.altitude)
+        metadata[kCGImagePropertyGPSAltitudeRef as String] = self.altitude < 0 ? 1 : 0
+        metadata[kCGImagePropertyGPSTimeStamp as String] = ISO8601DateFormatter().string(from: self.timestamp)
+        
+        return metadata
+    }
+}
+

@@ -73,18 +73,22 @@ struct LiveCameraView: View {
 
     // MARK: - Initialization
     
-    /// Initialize live camera view
-    ///
-    /// - Parameters:
-    ///   - selectedModel: ML model to use for classification
-    ///   - appStateViewModel: Global app state
-    ///   - liveCameraManager: Camera manager (can inject for testing)
-    ///   - onCustomDismiss: Optional custom dismiss handler
-    init(selectedModel: MLModelType, appStateViewModel: AppStateViewModel, liveCameraManager: LiveCameraViewModel = LiveCameraViewModel(), onCustomDismiss: (() -> Void)? = nil) {
+    init(selectedModel: MLModelType, appStateViewModel: AppStateViewModel, liveCameraManager: LiveCameraViewModel, onCustomDismiss: (() -> Void)? = nil) {
         self.selectedModel = selectedModel
         self.appStateViewModel = appStateViewModel
         _liveCameraManager = StateObject(wrappedValue: liveCameraManager)
         self.onCustomDismiss = onCustomDismiss
+    }
+    
+    /// Public, convenient initializer for normal use, isolated to the Main Actor to safely create its StateObject.
+    @MainActor
+    init(selectedModel: MLModelType, appStateViewModel: AppStateViewModel, onCustomDismiss: (() -> Void)? = nil) {
+        self.init(
+            selectedModel: selectedModel,
+            appStateViewModel: appStateViewModel,
+            liveCameraManager: LiveCameraViewModel(), // Safely created within @MainActor context
+            onCustomDismiss: onCustomDismiss
+        )
     }
     
     // MARK: - Computed Properties
@@ -138,6 +142,7 @@ struct LiveCameraView: View {
             liveCameraManager.includeLocationMetadata = appStateViewModel.includeLocationMetadata
             liveCameraManager.highlightRules = appStateViewModel.highlightRules // Set initial rules
             liveCameraManager.bestShotTargetLabel = appStateViewModel.bestShotTargetLabel // Set initial target
+            liveCameraManager.bestShotConfidenceThreshold = appStateViewModel.bestShotConfidenceThreshold // Set initial threshold
             liveCameraManager.startSession()
         }
         .onDisappear {
@@ -160,6 +165,9 @@ struct LiveCameraView: View {
         }
         .onChange(of: appStateViewModel.bestShotTargetLabel) { _, newLabel in
             liveCameraManager.bestShotTargetLabel = newLabel
+        }
+        .onChange(of: appStateViewModel.bestShotConfidenceThreshold) { _, newValue in
+            liveCameraManager.bestShotConfidenceThreshold = newValue
         }
     }
 

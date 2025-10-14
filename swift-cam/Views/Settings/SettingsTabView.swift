@@ -2,55 +2,38 @@
 //  SettingsTabView.swift
 //  swift-cam
 //
-//  Settings tab with comprehensive app configuration
+//  The main view for the "Settings" tab, providing a comprehensive list of app configurations.
 //
 
 import SwiftUI
 
-/// Settings tab featuring ML model selection, camera settings, and system info
+/// A view that presents a list of all user-configurable settings for the application.
 ///
-/// Provides a comprehensive settings interface organized into sections:
+/// This view acts as the central hub for tweaking ML models, camera behavior, privacy
+/// settings, and more. It is composed of multiple sub-sections, each handling a
+/// specific domain of configuration.
 ///
-/// **Sections:**
-/// 1. ML Model Selection
-///    - Choose between MobileNet, ResNet, FastViT
-///    - Shows model descriptions and status
-///    - Instant switching (models are cached)
-///
-/// 2. Camera Settings
-///    - Full screen camera toggle
-///    - Assisted capture mode
-///    - Face blur in saved photos (privacy for photos saved to library)
-///    - Face blur in live preview (performance intensive, optional)
-///    - Location metadata embedding
-///    - Best Shot duration slider
-///    - Best Shot target label
-///
-/// 3. Highlight Settings
-///    - Configure which objects to highlight
-///    - Set confidence thresholds per object
-///
-/// 4. Privacy Settings (conditional)
-///    - Blur style selection (Gaussian, Pixelated, Black Box)
-///    - Only shown when face blurring is enabled
-///
-/// 5. System Info
-///    - Current compute unit (Neural Engine, GPU, CPU)
-///    - Verification status
-///
-/// 6. About
-///    - App version and description
-///
-/// **UI Design:**
-/// Uses "Liquid Glass" design language with:
-/// - Gradient background
-/// - Ultra-thin material cards
-/// - Consistent spacing and padding
-/// - Haptic feedback on interactions
+/// **UI Layout:**
+/// ```
+/// ┌───────────────────────────┐
+/// │         [Header]          │
+/// │ ┌───────────────────────┐ │
+/// │ │ [ML Model Selection]  │ │
+/// │ ├───────────────────────┤ │
+/// │ │ [Camera Modes]        │ │
+/// │ ├───────────────────────┤ │
+/// │ │ [Best Shot Settings]  │ │
+/// │ ├───────────────────────┤ │
+/// │ │ [Privacy Settings]    │ │
+/// │ └───────────────────────┘ │
+/// │           ...             │
+/// └───────────────────────────┘
+/// ```
 ///
 /// **State Management:**
-/// All settings are persisted via `AppStateViewModel` which
-/// automatically saves to UserDefaults on change.
+/// - Binds directly to properties on the shared `AppStateViewModel` for most settings (toggles, navigation).
+/// - Uses local `@State` variables for sliders (`localBestShotDuration`, `localBestShotConfidence`) to provide
+///   live UI feedback during dragging, syncing the final value back to `AppStateViewModel` on change.
 struct SettingsTabView: View {
     
     // MARK: - Dependencies
@@ -58,6 +41,21 @@ struct SettingsTabView: View {
     @ObservedObject var viewModel: HomeViewModel
     @ObservedObject var appStateViewModel: AppStateViewModel
     private let hapticManager = HapticManagerService.shared
+    
+    // MARK: - Local State for Live Slider Updates
+    
+    @State private var localBestShotDuration: Double
+    @State private var localBestShotConfidence: Double
+
+    // MARK: - Initialization
+    
+    init(viewModel: HomeViewModel, appStateViewModel: AppStateViewModel) {
+        self.viewModel = viewModel
+        self.appStateViewModel = appStateViewModel
+        // Initialize local state from the view model to sync them initially
+        _localBestShotDuration = State(initialValue: appStateViewModel.bestShotDuration)
+        _localBestShotConfidence = State(initialValue: appStateViewModel.bestShotConfidenceThreshold)
+    }
     
     // MARK: - Body
     
@@ -118,6 +116,12 @@ struct SettingsTabView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: localBestShotDuration) { _, newValue in
+                appStateViewModel.bestShotDuration = newValue
+            }
+            .onChange(of: localBestShotConfidence) { _, newValue in
+                appStateViewModel.bestShotConfidenceThreshold = newValue
+            }
         }
     }
     
@@ -204,9 +208,48 @@ struct SettingsTabView: View {
                     icon: "timer",
                     title: "Best Shot Duration",
                     description: "Duration for the auto-capture sequence",
-                    duration: $appStateViewModel.bestShotDuration,
+                    duration: $localBestShotDuration, // Bind to local state
                     color: .cyan
                 )
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "sparkle.magnifyingglass")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.green)
+                            .frame(width: 30)
+                        Text("Confidence Threshold")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundStyle(.white)
+                    }
+                    
+                    Text("Minimum confidence to trigger auto-capture")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .padding(.leading, 30)
+
+                    Slider(value: $localBestShotConfidence, in: 0.0...1.0) { // Bind to local state
+                        Text("Confidence")
+                    } minimumValueLabel: {
+                        Text("0%")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.7))
+                    } maximumValueLabel: {
+                        Text("100%")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    .tint(.green)
+                    
+                    Text("\(Int(localBestShotConfidence * 100))%") // Read from local state
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                }
+                .padding()
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
 
                 NavigationLink(destination: BestShotSettingsView(targetLabel: $appStateViewModel.bestShotTargetLabel, modelLabels: viewModel.modelLabels)) {
                     SettingsNavigationRow(

@@ -93,6 +93,11 @@ class AppStateViewModel: ObservableObject {
         set { settings.bestShotDuration = newValue }
     }
     
+    var bestShotConfidenceThreshold: Double {
+        get { settings.bestShotConfidenceThreshold }
+        set { settings.bestShotConfidenceThreshold = newValue }
+    }
+    
     var highlightRules: [String: Double] {
         get { settings.highlightRules }
         set { settings.highlightRules = newValue }
@@ -115,24 +120,17 @@ class AppStateViewModel: ObservableObject {
     /// Preload all ML models during app startup
     /// This ensures models are ready for instant use without first-time loading delays
     private func startPreloading() async {
-        Logger.model.info("🚀 App starting - preloading pre-compiled ML models for optimal performance")
+        Logger.model.info("🚀 App starting - preloading ML models to warm up cache for optimal performance")
         
         let start = Date()
         
-        await ModelPreloader.preloadAll { progressText in
+        // The refactored preloadAll now provides a structured ModelLoadProgress object
+        await ModelPreloader.preloadAll { progress in
             Task { @MainActor in
-                self.loadingProgress = progressText
-                
-                // Parse progress (e.g., "Loading MobileNet V2... (1/3)")
-                if let match = progressText.range(of: "\\((\\d+)/(\\d+)\\)", options: .regularExpression) {
-                    let numbers = progressText[match].dropFirst().dropLast().split(separator: "/")
-                    if numbers.count == 2,
-                       let current = Int(numbers[0]),
-                       let total = Int(numbers[1]) {
-                        self.currentModelNumber = current
-                        self.totalModels = total
-                    }
-                }
+                // Directly assign properties from the progress object, no parsing needed
+                self.loadingProgress = progress.message
+                self.currentModelNumber = progress.current
+                self.totalModels = progress.total
             }
         }
         
