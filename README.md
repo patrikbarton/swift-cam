@@ -1,147 +1,105 @@
-# 📸 Swift-Cam
+# 📸 AI Vision: Intelligent Camera for iOS
 
-AI-powered object recognition app for iOS using Core ML.
+AI Vision is more than just a camera app—it's a powerful, real-time object recognition engine built with modern Swift and SwiftUI. It leverages on-device machine learning to understand the world around you, offering intelligent features that make capturing the perfect shot easier than ever.
 
-## ✨ Features
-
--   🤖 **Multiple ML Models**: Switch between MobileNetV2, ResNet-50, and FastViT.
--   📷 **Live Object Highlighting**: Get a visual confirmation with a green border when a desired object is in frame.
--   🎯 **Best Shot Mode**: Let the AI automatically capture high-resolution photos when it detects a specific object over a set period.
--   💡 **Assisted Capture**: A semi-automatic mode that only enables the shutter when a highlighted object is detected, helping you take perfectly-timed photos.
--   🖼️ **Photo Library Analysis**: Analyze any image from your photo library.
--   ⚙️ **Rich Settings**: All AI-assisted features are fully configurable in the app's settings menu.
--   💾 **Persistent Choices**: Your preferred model and settings are saved and restored automatically.
--   🔒 **Privacy Focused**: Includes an option to automatically blur faces in photos.
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Xcode 15.0 or later
-- iOS 17.0 or later
-- Apple Developer account
-
-### First-Time Setup
-
-1. **Clone the repository:**
-   ```bash
-   git clone <your-repo-url>
-   cd swift-cam
-   ```
-
-2. **Configure developer settings:**
-   ```bash
-   ./setup-developer.sh
-   ```
-   Or see [DEVELOPER_SETUP.md](Docs/DEVELOPER_SETUP.md) for manual setup.
-
-3. **Open in Xcode:**
-   ```bash
-   open swift-cam.xcodeproj
-   ```
-
-4. **Build and run!** 🎉
-
-**Note:** Camera and Photo Library permissions are already configured in the project. No additional Info.plist setup needed!
-
-### For Returning Developers
-
-Just pull and work - your developer settings are preserved:
-```bash
-git pull
-# No reconfiguration needed!
-```
-
-## 📖 Documentation
-
-- **[Developer Setup Guide](Docs/DEVELOPER_SETUP.md)** - Configure code signing (required for first-time setup)
-- **[Repository Structure](Docs/REPOSITORY_STRUCTURE.md)** - What files to commit, Info.plist explained
-- **[Quick Start](Docs/QUICK_START.md)** - TL;DR for getting started quickly
-- **[Docs/](Docs/)** - Additional technical guides and design documentation
-  - [Repository Q&A](Docs/REPOSITORY_QUESTIONS_ANSWERED.md) - Common questions answered
-  - [Testing Guide](Docs/TESTING_GUIDE.md) - How to test the app
-  - [Design Docs](Docs/) - Camera, UI, and ML implementation details
-
-## 🏗️ Architecture
-
-This app uses a modern MVVM-inspired architecture designed for SwiftUI.
-
--   **Views**: The UI is built with pure SwiftUI. `ContentView` is the entry point, containing a `TabView` for the main sections.
--   **ViewModels**:
-    -   `AppStateViewModel`: The single source of truth for global UI state and user-configurable settings. All settings are persisted to `UserDefaults`.
-    -   `LiveCameraViewModel`: Manages the entire live camera session, including device management, running the Vision ML model, and implementing all AI-assisted features (Highlighting, Best Shot, Assisted Capture).
-    -   `HomeViewModel`: Manages the state for the "Home" tab, specifically the logic for picking and analyzing an image from the user's Photo Library.
--   **Services**:
-    -   `ModelService`: A singleton responsible for efficiently loading and caching Core ML models and their class labels.
-    -   `FaceBlurringService`: A utility service for detecting and blurring faces in images.
-
-```
-swift-cam/
-├── Views/
-│   ├── Main/              # Main screens (ContentView, LiveCameraView)
-│   └── Components/        # Reusable UI components
-├── ViewModels/
-│   ├── AppStateViewModel.swift
-│   ├── LiveCameraViewModel.swift
-│   └── HomeViewModel.swift
-├── Services/
-│   ├── ModelService.swift
-│   └── FaceBlurringService.swift
-├── Models/                # Simple data structures
-└── Utilities/             # Helpers and extensions
-```
-
-## 🤝 Contributing
-
-1. Clone the repo
-2. Run `./setup-developer.sh` to configure your signing
-3. Create a feature branch
-4. Make your changes
-5. Commit and push
-6. Create a pull request
-
-Your personal developer configuration (`DeveloperSettings.xcconfig`) won't be committed - each developer has their own.
-
-## 🔒 Code Signing
-
-This project uses per-developer configuration files to avoid signing conflicts:
-- Each developer has their own `DeveloperSettings.xcconfig` (git-ignored)
-- No more merge conflicts on Team IDs or Bundle Identifiers
-- See [DEVELOPER_SETUP.md](Docs/DEVELOPER_SETUP.md) for details
-
-## 📦 ML Models
-
-The app includes three pre-compiled Core ML models:
-- **MobileNetV2**: Efficient and fast
-- **ResNet-50**: High accuracy
-- **FastViT**: Vision Transformer architecture
-
-Models are automatically compiled by Xcode during build and preloaded during the splash screen for optimal performance.
-
-## 🐛 Troubleshooting
-
-### Signing Issues
-See [DEVELOPER_SETUP.md](Docs/DEVELOPER_SETUP.md) troubleshooting section.
-
-### Build Errors
-1. Clean build folder: `Cmd+Shift+K`
-2. Check your `DeveloperSettings.xcconfig` exists
-3. Verify you're logged into Xcode with your Apple ID
-
-### Models Not Loading
-Models are automatically included in the build. If you see errors:
-1. Check the `.mlmodel` and `.mlpackage` files are in `swift-cam/` folder
-2. Clean and rebuild the project
-
-## 📄 License
-
-[Your License Here]
-
-## 👥 Authors
-
-- Joshua Nöldeke
-- [Contributors]
+This project serves as a showcase for cutting-edge iOS development, combining a fluid user experience with a highly performant, concurrency-safe architecture.
 
 ---
 
-**Need help?** Check [DEVELOPER_SETUP.md](Docs/DEVELOPER_SETUP.md) or open an issue!
+## ✨ Core Features
+
+*   🤖 **Multiple AI Models**: Instantly switch between high-speed (MobileNetV2), high-accuracy (ResNet50), and state-of-the-art (FastViT) models.
+*   🎯 **Live Object Highlighting**: Get a visual confirmation with a glowing border when a desired object is in frame.
+*   🏆 **Best Shot Mode**: Let the AI be your photographer! It automatically captures high-resolution photos when it detects a specific object with high confidence.
+*   💡 **Assisted Capture**: A semi-automatic mode that only enables the shutter when a highlighted object is detected, helping you capture perfectly-timed photos.
+*   🖼️ **Photo Library Analysis**: Run any image from your photo library through the AI engine.
+*   🔒 **Privacy-First Face Blurring**: Automatically detect and blur faces in both the live camera feed and saved photos, with multiple blur styles (Gaussian, Pixelated, Black Box).
+*   ⚙️ **Rich, Persistent Settings**: From the AI model to privacy rules and camera modes, your preferences are automatically saved and restored on launch.
+
+
+## 🏗️ Architecture: A Deep Dive
+
+This app is built using a modern, decoupled architecture designed for performance, scalability, and thread safety. It's a great example of how to structure a complex, real-time application in SwiftUI.
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                          UI Layer (Views)                   │
+│      (SwiftUI, Feature-Specific Component Folders)        │
+└───────────────────────────────────────────────────────────┘
+                           ▲
+                           │ Binds to & Displays Data
+                           ▼
+┌───────────────────────────────────────────────────────────┐
+│                  State Layer (ViewModels)                 │
+│ (MVVM, @MainActor, AppStateViewModel, LiveCameraViewModel)│
+└───────────────────────────────────────────────────────────┘
+                           ▲
+                           │ Calls Functions
+                           ▼
+┌───────────────────────────────────────────────────────────┐
+│                 Business Logic (Services)                 │
+│   (Actors, VisionService, ModelService, FaceBlurService)  │
+└───────────────────────────────────────────────────────────┘
+```
+
+### 1. UI Layer: SwiftUI Views
+
+The entire user interface is built with **SwiftUI**. The `View` layer is kept simple and is responsible only for displaying data and forwarding user actions to the ViewModels.
+
+-   **Tab-Based Navigation**: The app is organized into three main tabs: `Home`, `Camera`, and `Settings`.
+-   **Feature-Specific Components**: To keep the codebase organized, reusable components are grouped by the feature they belong to (e.g., `Views/Camera/Components/`). This makes the code easier to navigate than a single, monolithic `Components` folder.
+
+### 2. State Layer: MVVM with ViewModels
+
+We use the **Model-View-ViewModel (MVVM)** pattern to separate UI from logic. ViewModels are classes that hold the state for a given view and handle user interactions.
+
+-   `AppStateViewModel`: The **single source of truth** for global settings. It loads and saves all user preferences (like the selected model, privacy settings, etc.) to `UserDefaults` and provides them to the rest of the app.
+-   `LiveCameraViewModel`: The brain of the live camera experience. It manages the camera session, processes frames, and coordinates all the AI features.
+-   `HomeViewModel`: Manages the state for the "Home" tab, handling image selection from the Photo Library and running classification on still images.
+
+### 3. Business Logic: The Service Layer
+
+Services are responsible for discrete units of work and are decoupled from the UI, making them highly reusable and testable.
+
+-   `VisionService`: The heart of the AI engine. It's a Swift **Actor**, ensuring that all its operations are thread-safe. It handles everything related to Core ML and the Vision framework.
+-   `ModelService`: Responsible for loading the raw `.mlmodel` files from disk.
+-   `FaceBlurringService`: A dedicated service for detecting and blurring faces in an image.
+-   `PhotoSaverService`: A simple utility to handle saving images to the device's photo library.
+
+### 4. Concurrency Model: Performance & Safety
+
+This is one of the most important architectural aspects of the project. The app is designed to be fully **concurrency-safe** using modern Swift Concurrency.
+
+-   **Main Actor for UI**: All ViewModels and Views are marked with `@MainActor`, guaranteeing that all UI updates happen on the main thread. This prevents crashes and visual glitches.
+-   **Background Processing**: The `AVCaptureSession` delegate methods, which deliver camera frames, run on a dedicated background queue. This ensures the UI remains smooth and responsive (60fps) even while the camera is active.
+-   **`nonisolated` for Performance**: Camera-related properties in the `LiveCameraViewModel` are marked as `nonisolated` to explicitly separate them from the Main Actor's state, allowing them to be safely managed on the background queue.
+-   **`async/await` and Structured Concurrency**: We use `Task` and `async/await` to bridge between the background camera queue and our application logic, ensuring there are no data races. This modern approach replaces complex completion handler closures.
+
+### 5. ML Model Management: Efficiency is Key
+
+To ensure the app is fast and responsive, especially when switching between AI models, we use an intelligent caching strategy.
+
+-   **Pre-warming**: On app launch, all ML models are loaded into memory during the splash screen. This prevents any "first-use" lag.
+-   **Efficient Caching (`VisionService`)**: The `VisionService` actor maintains a cache for both the compiled `VNCoreMLModel` and the `VNCoreMLRequest` objects.
+-   **Solving ANE Power-Cycling**: By caching the `VNCoreMLRequest`, we prevent the Apple Neural Engine (ANE) from being powered on and off every time the model is used. This was a key performance optimization that resolved significant system-level overhead during live detection.
+
+---
+
+## 🚀 How to Build
+
+1.  **Clone the repository**.
+2.  **Configure Developer Settings**: Run the setup script to create your developer configuration file. This is only needed once.
+    ```bash
+    ./setup-developer.sh
+    ```
+3.  **Open `swift-cam.xcodeproj` in Xcode** and build!
+
+
+## 📂 Project Highlights (For Presentation)
+
+If you want to showcase the core logic of the project, these files are the best place to start:
+
+-   `LiveCameraViewModel.swift`: See the `captureOutput` delegate method for the entry point of our real-time frame processing. Notice how it uses `Task` and `await MainActor.run` to safely interact with the UI and services from a background thread.
+-   `VisionService.swift`: This **Actor** is the heart of the ML implementation. Look at `performClassification` to see the streamlined Vision pipeline and `getClassificationRequest` to see the efficient caching strategy.
+-   `Logger+Extensions.swift`: Shows how to create app-wide, thread-safe loggers using the `nonisolated` keyword.
+-   `SettingsTabView.swift`: A great example of a complex, data-driven settings screen built entirely in SwiftUI and bound to a central state object (`AppStateViewModel`).
