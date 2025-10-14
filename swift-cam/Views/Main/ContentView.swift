@@ -476,15 +476,16 @@ struct SettingsTabView: View {
                         
                         // Model Selection Section
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("ML Model Selection")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 24)
-                            
-                            Text("Choose the AI model for image classification")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.7))
-                                .padding(.horizontal, 24)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("ML Model Selection")
+                                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.white)
+                                
+                                Text("Choose the AI model for image classification")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.7))
+                            }
+                            .padding(.horizontal, 24)
                             
                             VStack(spacing: 12) {
                                 ForEach(MLModelType.allCases) { model in
@@ -505,15 +506,16 @@ struct SettingsTabView: View {
                         
                         // Camera Settings Section
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Camera Settings")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 24)
-                            
-                            Text("Customize your camera experience")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.7))
-                                .padding(.horizontal, 24)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Camera Settings")
+                                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.white)
+                                
+                                Text("Customize your camera experience")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.7))
+                            }
+                            .padding(.horizontal, 24)
                             
                             VStack(spacing: 12) {
                                 CameraSettingToggleRow(
@@ -538,15 +540,16 @@ struct SettingsTabView: View {
                         // Privacy Settings Section (Blur Style Picker - only show if face blurring is enabled)
                         if appStateViewModel.faceBlurringEnabled {
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("Privacy Style")
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 24)
-                                
-                                Text("Choose how faces are obscured")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(.white.opacity(0.7))
-                                    .padding(.horizontal, 24)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Privacy Style")
+                                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                                        .foregroundStyle(.white)
+                                    
+                                    Text("Choose how faces are obscured")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundStyle(.white.opacity(0.7))
+                                }
+                                .padding(.horizontal, 24)
                                 
                                 VStack(spacing: 12) {
                                     ForEach(BlurStyle.allCases, id: \.self) { style in
@@ -566,7 +569,7 @@ struct SettingsTabView: View {
                         // System Info Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("System Info")
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 24)
                             
@@ -591,34 +594,93 @@ struct SettingsTabView: View {
                         // App Info Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("About")
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 24)
                             
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("AI Vision")
-                                    .font(.headline)
-                                    .foregroundStyle(.white)
-                                
-                                Text("A powerful real-time object detection app using CoreML and Vision framework.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.white.opacity(0.7))
-                                
-                                Divider()
-                                    .background(.white.opacity(0.3))
-                                
-                                HStack {
-                                    Text("Version")
-                                        .foregroundStyle(.white.opacity(0.7))
-                                    Spacer()
-                                    Text("1.0.0")
-                                        .foregroundStyle(.white)
+                            VStack(alignment: .leading, spacing: 16) {
+                                // App Icon and Name (Optimized)
+                                HStack(spacing: 16) {
+                                    Circle()
+                                        .fill(
+                                            RadialGradient(
+                                                colors: [Color.appAccent.opacity(0.3), Color.appAccent.opacity(0.1), Color.clear],
+                                                center: .center,
+                                                startRadius: 20,
+                                                endRadius: 34
+                                            )
+                                        )
+                                        .frame(width: 68, height: 68)
+                                        .overlay(
+                                            Circle()
+                                                .fill(
+                                                    LinearGradient(
+                                                        colors: [Color.appAccent, Color.appSecondary],
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    )
+                                                )
+                                                .frame(width: 60, height: 60)
+                                        )
+                                        .overlay(
+                                            Circle()
+                                                .fill(.thinMaterial.opacity(0.3))
+                                                .frame(width: 60, height: 60)
+                                        )
+                                        .overlay(
+                                            Image(systemName: "camera.metering.center.weighted")
+                                                .font(.system(size: 28, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                        )
+                                    
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("AI Vision")
+                                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                                            .foregroundStyle(.white)
+                                        
+                                        Text("Version 1.0.0")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundStyle(.white.opacity(0.6))
+                                    }
                                 }
-                                .font(.subheadline)
+                                
+                                // Divider
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color.white.opacity(0.3), Color.white.opacity(0.1)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .frame(height: 1)
+                                
+                                // Description
+                                Text("A powerful real-time object detection app using CoreML and Vision framework.")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.75))
+                                    .lineSpacing(4)
                             }
                             .padding(20)
-                            .background(.ultraThinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .fill(
+                                                LinearGradient(
+                                                    colors: [Color.white.opacity(0.05), Color.white.opacity(0.01)],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                            )
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
+                                    )
+                            )
+                            .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
                             .padding(.horizontal, 24)
                         }
                         
@@ -641,45 +703,113 @@ struct ModelSettingRow: View {
     var body: some View {
         Button(action: onSelect) {
             HStack(spacing: 16) {
+                // Enhanced Icon Container with Liquid Glass (Optimized)
                 ZStack {
+                    // Simplified glow - no blur for better performance
+                    if isSelected {
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    colors: [Color.appAccent.opacity(0.3), Color.appAccent.opacity(0)],
+                                    center: .center,
+                                    startRadius: 20,
+                                    endRadius: 33
+                                )
+                            )
+                            .frame(width: 66, height: 66)
+                    }
+                    
+                    // Main circle with combined gradient
                     Circle()
-                        .fill(isSelected ? Color.appAccent : Color.gray.opacity(0.3))
-                        .frame(width: 50, height: 50)
+                        .fill(
+                            isSelected ?
+                            LinearGradient(
+                                colors: [Color.appAccent, Color.appSecondary],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ) :
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.15), Color.white.opacity(0.05)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            Circle()
+                                .fill(.thinMaterial.opacity(isSelected ? 0.2 : 0.4))
+                        )
+                        .overlay(
+                            Circle()
+                                .strokeBorder(
+                                    isSelected ? Color.white.opacity(0.4) : Color.white.opacity(0.2),
+                                    lineWidth: 1.5
+                                )
+                        )
+                        .frame(width: 56, height: 56)
                     
                     if viewModel.isSwitchingModel && isSelected {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.6)
+                            .scaleEffect(0.8)
                     } else {
                         Image(systemName: model.icon)
-                            .font(.system(size: 22))
-                            .foregroundStyle(isSelected ? .white : .gray)
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundStyle(isSelected ? .white : .white.opacity(0.5))
                     }
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(model.displayName)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                     
                     Text(modelDescription(for: model))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.65))
                         .lineLimit(2)
+                        .lineSpacing(2)
                 }
                 
                 Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 22))
+                        .font(.system(size: 28))
                         .foregroundStyle(Color.appAccent)
+                        .shadow(color: Color.appAccent.opacity(0.4), radius: 4, x: 0, y: 0)
                 }
             }
-            .padding(16)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                LinearGradient(
+                                    colors: isSelected ? 
+                                        [Color.appAccent.opacity(0.2), Color.appSecondary.opacity(0.1)] :
+                                        [Color.white.opacity(0.05), Color.white.opacity(0.01)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .strokeBorder(
+                                isSelected ? Color.appAccent.opacity(0.5) : Color.white.opacity(0.15),
+                                lineWidth: isSelected ? 2 : 1
+                            )
+                    )
+            )
+            .shadow(
+                color: isSelected ? Color.appAccent.opacity(0.2) : Color.black.opacity(0.08),
+                radius: isSelected ? 12 : 8,
+                y: isSelected ? 4 : 2
+            )
         }
+        .buttonStyle(ScaleButtonStyle())
         .disabled(viewModel.isSwitchingModel)
     }
     
@@ -704,29 +834,73 @@ struct InfoRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.2))
-                    .frame(width: 44, height: 44)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundStyle(color)
-            }
+            // Optimized Icon Container
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [color.opacity(0.3), color.opacity(0.1), Color.clear],
+                        center: .center,
+                        startRadius: 10,
+                        endRadius: 28
+                    )
+                )
+                .frame(width: 52, height: 52)
+                .overlay(
+                    Circle()
+                        .fill(.thinMaterial.opacity(0.5))
+                        .frame(width: 48, height: 48)
+                )
+                .overlay(
+                    Circle()
+                        .strokeBorder(color.opacity(0.4), lineWidth: 1.5)
+                        .frame(width: 48, height: 48)
+                )
+                .overlay(
+                    Image(systemName: icon)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(color)
+                )
             
             Text(title)
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
             
             Spacer()
             
             Text(value)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.8))
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.9))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(.thinMaterial)
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(color.opacity(0.3), lineWidth: 1)
+                        )
+                )
         }
-        .padding(16)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.05), Color.white.opacity(0.01)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
     }
 }
 
@@ -740,36 +914,94 @@ struct CameraSettingToggleRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.2))
-                    .frame(width: 50, height: 50)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 22))
-                    .foregroundStyle(color)
-            }
+            // Optimized Icon Container
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [color.opacity(0.3), color.opacity(0.1), Color.clear],
+                        center: .center,
+                        startRadius: 15,
+                        endRadius: 31
+                    )
+                )
+                .frame(width: 62, height: 62)
+                .overlay(
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [color.opacity(0.4), color.opacity(0.2)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 56, height: 56)
+                )
+                .overlay(
+                    Circle()
+                        .fill(.thinMaterial.opacity(0.4))
+                        .frame(width: 56, height: 56)
+                )
+                .overlay(
+                    Circle()
+                        .strokeBorder(color.opacity(0.5), lineWidth: 1.5)
+                        .frame(width: 56, height: 56)
+                )
+                .overlay(
+                    Image(systemName: icon)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(color)
+                )
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 
                 Text(description)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.65))
                     .lineLimit(2)
+                    .lineSpacing(2)
             }
             
             Spacer()
             
+            // Optimized Toggle
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .tint(color)
+                .scaleEffect(1.1)
         }
-        .padding(16)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(
+                            LinearGradient(
+                                colors: isOn ?
+                                    [color.opacity(0.15), color.opacity(0.05)] :
+                                    [Color.white.opacity(0.05), Color.white.opacity(0.01)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .strokeBorder(
+                            isOn ? color.opacity(0.4) : Color.white.opacity(0.15),
+                            lineWidth: isOn ? 1.5 : 1
+                        )
+                )
+        )
+        .shadow(
+            color: isOn ? color.opacity(0.15) : Color.black.opacity(0.08),
+            radius: isOn ? 10 : 6,
+            y: isOn ? 4 : 2
+        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isOn)
     }
 }
 
@@ -782,39 +1014,112 @@ struct BlurStyleRow: View {
     var body: some View {
         Button(action: onSelect) {
             HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? Color.purple : Color.gray.opacity(0.3))
-                        .frame(width: 44, height: 44)
-                    
-                    Image(systemName: iconForStyle(style))
-                        .font(.system(size: 20))
-                        .foregroundStyle(isSelected ? .white : .gray)
-                }
+                // Optimized Icon Container
+                Circle()
+                    .fill(
+                        isSelected ?
+                        RadialGradient(
+                            colors: [Color.purple.opacity(0.3), Color.purple.opacity(0.1), Color.clear],
+                            center: .center,
+                            startRadius: 15,
+                            endRadius: 27
+                        ) :
+                        RadialGradient(
+                            colors: [Color.white.opacity(0.1), Color.clear],
+                            center: .center,
+                            startRadius: 15,
+                            endRadius: 27
+                        )
+                    )
+                    .frame(width: 54, height: 54)
+                    .overlay(
+                        Circle()
+                            .fill(
+                                isSelected ?
+                                LinearGradient(
+                                    colors: [Color.purple.opacity(0.6), Color.purple.opacity(0.4)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ) :
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.15), Color.white.opacity(0.05)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 48, height: 48)
+                    )
+                    .overlay(
+                        Circle()
+                            .fill(.thinMaterial.opacity(isSelected ? 0.3 : 0.4))
+                            .frame(width: 48, height: 48)
+                    )
+                    .overlay(
+                        Circle()
+                            .strokeBorder(
+                                isSelected ? Color.purple.opacity(0.6) : Color.white.opacity(0.2),
+                                lineWidth: 1.5
+                            )
+                            .frame(width: 48, height: 48)
+                    )
+                    .overlay(
+                        Image(systemName: iconForStyle(style))
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(isSelected ? .white : .white.opacity(0.5))
+                    )
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(style.rawValue)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                     
                     Text(style.description)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(.white.opacity(0.65))
                         .lineLimit(2)
+                        .lineSpacing(2)
                 }
                 
                 Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20))
+                        .font(.system(size: 24))
                         .foregroundStyle(Color.purple)
+                        .shadow(color: Color.purple.opacity(0.4), radius: 4, x: 0, y: 0)
                 }
             }
-            .padding(14)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(
+                                LinearGradient(
+                                    colors: isSelected ?
+                                        [Color.purple.opacity(0.15), Color.purple.opacity(0.05)] :
+                                        [Color.white.opacity(0.05), Color.white.opacity(0.01)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .strokeBorder(
+                                isSelected ? Color.purple.opacity(0.4) : Color.white.opacity(0.15),
+                                lineWidth: isSelected ? 1.5 : 1
+                            )
+                    )
+            )
+            .shadow(
+                color: isSelected ? Color.purple.opacity(0.2) : Color.black.opacity(0.08),
+                radius: isSelected ? 10 : 6,
+                y: isSelected ? 4 : 2
+            )
         }
+        .buttonStyle(ScaleButtonStyle())
     }
     
     private func iconForStyle(_ style: BlurStyle) -> String {
